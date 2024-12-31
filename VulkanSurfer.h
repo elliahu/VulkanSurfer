@@ -13,6 +13,7 @@
 
 
 namespace Surfer {
+
     /**
      * Represents a single window
      */
@@ -35,7 +36,7 @@ namespace Surfer {
          * @param y Vertical position of the window on the screen
          * @return Window pointer
          */
-        static Window * createWindow(const std::string& title, const VkInstance instance, const uint32_t width, const uint32_t height, const uint32_t x, const uint32_t y) {
+        static Window * createWindow(const std::string& title, const VkInstance instance, const uint32_t width, const uint32_t height, const int32_t x, const int32_t y) {
             return new Window(title, instance, width, height, x, y);
         }
 
@@ -70,7 +71,7 @@ namespace Surfer {
 
     private:
 
-        Window(const std::string& title,const VkInstance instance, const uint32_t width, const uint32_t height, const uint32_t x, const uint32_t y) {
+        Window(const std::string& title,const VkInstance instance, const uint32_t width, const uint32_t height, const int32_t x, const int32_t y) {
 #if defined(SURFER_PLATFORM_X11)
             X11_createWindow(title, instance, width, height, x, y);
 #endif
@@ -85,6 +86,8 @@ namespace Surfer {
         VkSurfaceKHR _surface;
         VkInstance _instance;
         bool _shouldClose = false;
+        uint32_t _width, _height;
+        int32_t _x, _y;
 
 #if defined(SURFER_PLATFORM_WIN32)
 
@@ -94,7 +97,13 @@ namespace Surfer {
         ::Window X11_root;
         Atom X11_wmDeleteMessage;
 
-        void X11_createWindow(const std::string& title,const VkInstance instance, const uint32_t width, const uint32_t height, const uint32_t x, const uint32_t y) {
+        void X11_createWindow(const std::string& title,const VkInstance instance, const uint32_t width, const uint32_t height, const int32_t x, const int32_t y) {
+
+            _width = width;
+            _height = height;
+            _x = x;
+            _y = y;
+
             X11_display = XOpenDisplay(nullptr);
             if (!X11_display)
             {
@@ -163,6 +172,53 @@ namespace Surfer {
                     X11_onClose();
                     break;
                 }
+                case KeyPress:
+                {
+                    X11_onKeyPress(event.xkey.keycode);
+                    break;
+                }
+                case KeyRelease:
+                {
+                    X11_onKeyRelease(event.xkey.keycode);
+                    break;
+                }
+                case ButtonPress: {
+                    switch (event.xbutton.button) {
+                        case Button1: {
+                            break;
+                        }
+                        case Button2: {
+                            break;
+                        }
+                        case Button3: {
+                            break;
+                        }
+                    }
+                }
+                case ButtonRelease: {
+                    switch (event.xbutton.button) {
+                        case Button1: {
+                            break;
+                        }
+                        case Button2: {
+                            break;
+                        }
+                        case Button3: {
+                            break;
+                        }
+                    }
+                }
+                case MotionNotify: {
+                    break;
+                }
+                case ConfigureNotify:
+                {
+                    if (event.xconfigure.width != _width || event.xconfigure.height != _height)
+                    {
+
+                    }
+                    break;
+                }
             }
         }
 
@@ -174,6 +230,22 @@ namespace Surfer {
             {
                 XNextEvent(X11_display, &event);
             }
+        }
+
+        void X11_onKeyPress(KeyCode keyCode) {
+
+        }
+
+        void X11_onKeyRelease(KeyCode keyCode) {
+
+        }
+
+        void X11_onResize(uint32_t width, uint32_t height) {
+
+        }
+
+        void X11_onMouseMotion(uint32_t x, uint32_t y) {
+
         }
 
 #endif

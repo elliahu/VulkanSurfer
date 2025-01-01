@@ -6,11 +6,14 @@ Windows (Win32) is up next. Please se support section bellow.
 A minimal cross-platform object-oriented c++11 header only window library for Vulkan.
 
 This project aims to make window creation with a Vulkan surface and event handling as simple and portable as possible.
-If you just need to open a simple window with basing event/input handling for your Vulkan projects, this is the tool you need.
+If you just need to open a simple window with basing event/input handling for your Vulkan projects, this is the tool you need. 
+Library is header-only single file and there is no need for implementation files. Just drop it into you project.
 
 ## Simple API
 The window API was made so it is as simple as possible. Open a window and create a `VkSurface` in just two lines:
 ```c++
+#include "VulkanSurfer.h"
+
 // Create a window
 Surfer::Window * window = Surfer::Window::createWindow("Example window", instance, 800, 600 , 100, 100 );
 

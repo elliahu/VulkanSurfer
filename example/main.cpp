@@ -51,6 +51,33 @@ int main() {
     // Now we can ga a surface to draw onto
     VkSurfaceKHR surface = window->getSurface();
 
+    // Register callbacks
+    window->registerKeyPressCallback([](Surfer::KeyCode key) {
+        std::cout << "Key pressed " << static_cast<unsigned int>(key) << std::endl;
+    });
+
+    window->registerKeyReleaseCallback([](Surfer::KeyCode key) {
+        std::cout << "Key released "  << static_cast<unsigned int>(key) << std::endl;
+    });
+
+    window->registerMouseMotionCallback([](unsigned int x, unsigned int y) {
+        std::cout << "Mouse moved in window: " << x << " x " << y << std::endl;
+    });
+
+    window->registerResizeCallback([](unsigned int width, unsigned int height) {
+        std::cout << "Window resized: " << width << " x " << height << std::endl;
+    });
+
+    window->registerMoveCallback([](int x, int y) {
+        std::cout << "Window moved: " << x << " x " << y << std::endl;
+    });
+
+    window->registerCloseCallback([]() {
+        // you can call destroyWindow here
+        std::cout << "Closing..." << std::endl;
+    });
+
+
     // Window loop
     while (!window->shouldClose()) {
         // poll for events

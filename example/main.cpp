@@ -77,6 +77,16 @@ int main() {
         std::cout << "Closing..." << std::endl;
     });
 
+    window->registerMouseEnterExitCallback([](bool enter) {
+        if (enter) {std::cout << "Mouse entered." << std::endl;}
+        else {std::cout << "Mouse exited." << std::endl;}
+    });
+
+    window->registerFocusCallback([](bool focused) {
+        if (focused) {std::cout << "Window is in focus." << std::endl;}
+        else {std::cout << "Window is out of focus." << std::endl;}
+    });
+
 
     // Window loop
     while (!window->shouldClose()) {

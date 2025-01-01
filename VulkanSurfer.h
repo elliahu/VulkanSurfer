@@ -73,6 +73,8 @@ namespace Surfer {
     typedef std::function<void(uint32_t width, uint32_t height)> ResizeCallback;
     typedef std::function<void(int32_t x, int32_t y)> MoveCallback;
     typedef std::function<void()> CloseCallback;
+    typedef std::function <void(bool entered)> MouseEnterExitCallback;
+    typedef std::function <void(bool focused)> FocusCallback;
 
     /**
      * Represents a single window
@@ -167,6 +169,18 @@ namespace Surfer {
          */
         void registerCloseCallback(const CloseCallback &callback) {this->_closeCallback = callback;}
 
+        /**
+         * Registers a callback that is triggered when a mouse enter (true) or exits (false) the window
+         * @param callback MouseEnterExitCallback function
+         */
+        void registerMouseEnterExitCallback(const MouseEnterExitCallback &callback) {this->_mouseEnterExitCallback = callback;}
+
+        /**
+         * Registers a callback that is triggered when the window becomes in focus (true) or loses focus (false)
+         * @param callback FocusCallback function
+         */
+        void registerFocusCallback(const FocusCallback &callback) {this->_focusCallback = callback;}
+
     private:
 
         Window(const std::string& title,const VkInstance instance, const uint32_t width, const uint32_t height, const int32_t x, const int32_t y) {
@@ -190,6 +204,7 @@ namespace Surfer {
         uint32_t _width, _height;
         int32_t _x, _y;
         uint32_t _mouse_x, _mouse_y;
+        bool _focused, _mouseEntered;
 
         // Callbacks
         KeyPressCallback _keyPressCallback = nullptr;
@@ -198,6 +213,8 @@ namespace Surfer {
         ResizeCallback _resizeCallback = nullptr;
         MoveCallback _moveCallback = nullptr;
         CloseCallback _closeCallback = nullptr;
+        MouseEnterExitCallback _mouseEnterExitCallback = nullptr;
+        FocusCallback _focusCallback = nullptr;
 
 
 #if defined(SURFER_PLATFORM_WIN32)
@@ -224,7 +241,7 @@ namespace Surfer {
             X11_root = DefaultRootWindow(X11_display);
             XSetWindowAttributes windowAttributes;
             windowAttributes.background_pixel = WhitePixel(X11_display, 0);
-            windowAttributes.event_mask = ExposureMask | KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask | StructureNotifyMask;
+            windowAttributes.event_mask = ExposureMask | KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask | StructureNotifyMask | FocusChangeMask | EnterWindowMask;
 
             X11_window = XCreateWindow(X11_display, X11_root, x, y, width, height, 0, CopyFromParent, InputOutput, CopyFromParent, CWBackPixel | CWEventMask, &windowAttributes);
 
@@ -320,6 +337,22 @@ namespace Surfer {
                         X11_onResize(xce.width, xce.height);
                     }
 
+                    break;
+                }
+                case FocusIn: {
+                    X11_onFocusIn();
+                    break;
+                }
+                case FocusOut: {
+                    X11_onFocusOut();
+                    break;
+                }
+                case EnterNotify: {
+                    X11_onMouseEnter();
+                    break;
+                }
+                case LeaveNotify: {
+                    X11_onMouseLeave();
                     break;
                 }
             }
@@ -446,6 +479,34 @@ namespace Surfer {
             }
         }
 
+        void X11_onFocusIn() {
+            _focused = true;
+            if (_focusCallback != nullptr) {
+                _focusCallback(true);
+            }
+        }
+
+        void X11_onFocusOut() {
+            _focused = false;
+            if (_focusCallback != nullptr) {
+                _focusCallback(false);
+            }
+        }
+
+        void X11_onMouseEnter() {
+            _mouseEntered = true;
+            if (_mouseEnterExitCallback != nullptr) {
+                _mouseEnterExitCallback(true);
+            }
+        }
+
+        void X11_onMouseLeave() {
+            _mouseEntered = false;
+            if (_mouseEnterExitCallback != nullptr) {
+                _mouseEnterExitCallback(false);
+            }
+        }
+
         // Map raw X11 keycodes to KeyCode
         static KeyCode X11_translateKeyCode(unsigned int x11KeyCode, unsigned int modifiers = 0) {
             // Normalize keycode by subtracting the offset (8 for X11)
@@ -481,6 +542,7 @@ namespace Surfer {
                 default: return KeyCode::Unknown;
             }
         }
+
 
 #endif
     };

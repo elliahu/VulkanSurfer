@@ -1,6 +1,8 @@
 # VulkanSurfer
 
-***Important note:*** This project is in early stage of development. Only Linux (X11) and Windows (Win32) is supported at the moment. Please se support section bellow.
+***Important note:*** This project is in early stage of development. Only Linux (X11) and Windows (Win32) is supported at the moment.
+Key translation from native keycodes is currently in development. Only basic keys are supported as of now.
+Please se support section bellow.
 
 A minimal cross-platform object-oriented c++11 header only window library for Vulkan.
 

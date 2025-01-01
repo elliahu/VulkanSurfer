@@ -1,6 +1,14 @@
 #include <iostream>
 #include <memory>
+
+#ifdef _WIN32
+#define SURFER_PLATFORM_WIN32
+#endif
+
+#ifdef __linux__
 #define SURFER_PLATFORM_X11
+#endif
+
 #include "VulkanSurfer.h"
 
 int main() {
@@ -73,7 +81,6 @@ int main() {
     });
 
     window->registerCloseCallback([]() {
-        // you can call destroyWindow here
         std::cout << "Closing..." << std::endl;
     });
 

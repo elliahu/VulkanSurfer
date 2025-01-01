@@ -188,9 +188,16 @@ namespace Surfer {
          */
         void registerFocusCallback(const FocusCallback &callback) { this->_focusCallback = callback; }
 
-    private:
-        Window(const std::string &title, const VkInstance instance, const uint32_t width, const uint32_t height,
-               const int32_t x, const int32_t y) {
+    protected:
+        Window(const std::string &title, VkInstance instance, const uint32_t width, const uint32_t height,
+               const int32_t x, const int32_t y): _instance(instance) {
+            if (instance == VK_NULL_HANDLE) {
+                throw std::runtime_error("VulkanSurfer: instance is null");;
+            }
+
+            if (width == 0 || height == 0) {
+                throw std::runtime_error("VulkanSurfer: width == 0 || height == 0");;
+            }
 #if defined(SURFER_PLATFORM_X11)
             X11_createWindow(title, instance, width, height, x, y);
 #endif
@@ -241,7 +248,7 @@ namespace Surfer {
 
             X11_display = XOpenDisplay(nullptr);
             if (!X11_display) {
-                throw std::runtime_error("Failed to open X display");
+                throw std::runtime_error("VulkanSurfer: Failed to open X display");
             }
 
             X11_root = DefaultRootWindow(X11_display);
@@ -275,8 +282,7 @@ namespace Surfer {
 
             VkResult result = vkCreateXlibSurfaceKHR(instance, &surfaceInfo, nullptr, &_surface);
             if (result != VK_SUCCESS) {
-                std::cerr << "Failed to create Vulkan surface\n";
-                exit(EXIT_FAILURE);
+                throw std::runtime_error("VulkanSurfer: Failed to create Xlib surface");
             }
 
             this->_instance = instance;

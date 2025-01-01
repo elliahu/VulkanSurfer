@@ -12,6 +12,7 @@ Library is header-only single file and there is no need for implementation files
 ## Simple API
 The window API was made so it is as simple as possible. Open a window and create a `VkSurface` in just two lines:
 ```c++
+#define SURFER_PLATFORM_X11
 #include "VulkanSurfer.h"
 
 // Create a window

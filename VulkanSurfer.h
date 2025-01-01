@@ -11,6 +11,8 @@
 #if defined(SURFER_PLATFORM_X11)
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
+#include <X11/XKBlib.h>
+#include <X11/Xutil.h>
 #endif
 
 
@@ -239,7 +241,7 @@ namespace Surfer {
         ::Window X11_root;
         Atom X11_wmDeleteMessage;
 
-        void X11_createWindow(const std::string &title, const VkInstance instance, const uint32_t width,
+        void X11_createWindow(const std::string &title, VkInstance instance, const uint32_t width,
                               const uint32_t height, const int32_t x, const int32_t y) {
             _width = width;
             _height = height;
@@ -519,40 +521,31 @@ namespace Surfer {
         }
 
         // Map raw X11 keycodes to KeyCode
-        static KeyCode X11_translateKeyCode(unsigned int x11KeyCode, unsigned int modifiers = 0) {
-            // Normalize keycode by subtracting the offset (8 for X11)
-            x11KeyCode -= 8;
+        KeyCode X11_translateKeyCode(unsigned int x11KeyCode, unsigned int modifiers = 0) {
+            KeySym keySym = XkbKeycodeToKeysym(X11_display, x11KeyCode, 0, 0);
 
-            // Handle modifier keys
-            if (modifiers & ShiftMask) {
-                // Adjust for shifted keys, e.g., 'a' -> 'A'
-                // Requires XGetKeyboardMapping to differentiate
+            // a-z
+            if (keySym >= XK_a && keySym <= XK_z) {
+                return static_cast<KeyCode>(static_cast<uint32_t>(KeyCode::KeyA) + (keySym - XK_a));
             }
 
-            // Example mapping for alphabet keys
-            if (x11KeyCode >= 38 && x11KeyCode <= 63) {
-                // Assuming QWERTY layout
-                return static_cast<KeyCode>(static_cast<uint32_t>(KeyCode::KeyA) + (x11KeyCode - 38));
+            // A-Z
+            if (keySym >= XK_A && keySym <= XK_Z) {
+                return static_cast<KeyCode>(static_cast<uint32_t>(KeyCode::KeyA) + (keySym - XK_A));
             }
 
-            // Example mapping for numbers (row, not numpad)
-            if (x11KeyCode >= 10 && x11KeyCode <= 19) {
-                return static_cast<KeyCode>(static_cast<uint32_t>(KeyCode::Num0) + (x11KeyCode - 10));
+            // 1-9
+            if (keySym >= XK_0 && keySym <= XK_9) {
+                return static_cast<KeyCode>(static_cast<uint32_t>(KeyCode::Num0) + (keySym - XK_0));
             }
 
-            // Handle other keys (arrows, function keys, etc.)
-            switch (x11KeyCode) {
-                case 36: return KeyCode::Enter;
-                case 65: return KeyCode::Space;
-                case 23: return KeyCode::Tab;
-                case 9: return KeyCode::Esc;
-                case 111: return KeyCode::ArrowUp;
-                case 116: return KeyCode::ArrowDown;
-                case 113: return KeyCode::ArrowLeft;
-                case 114: return KeyCode::ArrowRight;
-                // Add more mappings as needed
-                default: return KeyCode::Unknown;
+            // Numpad 1-9
+            if (keySym >= XK_KP_0 && keySym <= XK_KP_9) {
+                return static_cast<KeyCode>(static_cast<uint32_t>(KeyCode::Numpad0) + (keySym - XK_KP_0));
             }
+
+
+            return KeyCode::Unknown;
         }
 
 

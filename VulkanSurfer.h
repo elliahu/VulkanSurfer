@@ -349,10 +349,14 @@ namespace Surfer {
                         window->Win32_onClose();
                     }
                     return 0;
-                case WM_DESTROY:
+                case WM_DESTROY: {
                     SetWindowLongPtr(hWnd, GWLP_USERDATA, 0); // Clear user data
                     PostQuitMessage(0);
+                    if (window) {
+                        window->Win32_onDestroy();
+                    }
                     return 0;
+                }
                 case WM_PAINT:
                     ValidateRect(hWnd, NULL);
                     return 0;
@@ -441,7 +445,7 @@ namespace Surfer {
                     }
                 }
                 case WM_KILLFOCUS: {
-                    if (window) {
+                    if (window && !window->shouldClose()) {
                         window->Win32_onFocusOut();
                     }
                 }
@@ -451,13 +455,13 @@ namespace Surfer {
         }
 
         void Win32_onKeyDown(WPARAM key) {
-            if(_keyPressCallback != nullptr) {
+            if (_keyPressCallback != nullptr) {
                 _keyPressCallback(Win32_translateKeyCode(key));
             }
         }
 
         void Win32_onKeyUp(WPARAM key) {
-            if(_keyReleaseCallback != nullptr) {
+            if (_keyReleaseCallback != nullptr) {
                 _keyReleaseCallback(Win32_translateKeyCode(key));
             }
         }
@@ -472,7 +476,9 @@ namespace Surfer {
                 TranslateMessage(&msg);
                 DispatchMessage(&msg);
             }
+        }
 
+        void Win32_onDestroy() {
             if (_closeCallback != nullptr)
                 _closeCallback();
         }
@@ -545,8 +551,7 @@ namespace Surfer {
             int x = LOWORD(lParam);
             int y = HIWORD(lParam);
 
-            if(x != _x || y != _y) {
-
+            if (x != _x || y != _y) {
                 _x = x;
                 _y = y;
 
@@ -587,12 +592,12 @@ namespace Surfer {
 
         KeyCode Win32_translateKeyCode(WPARAM key) {
             // A - Z
-            if(key >= 0x41 && key <= 0x5A) {
+            if (key >= 0x41 && key <= 0x5A) {
                 return static_cast<KeyCode>(static_cast<uint32_t>(KeyCode::KeyA) + (key - 0x41));
             }
 
             // Numpad 0-9
-            if(key >= VK_NUMPAD0 && key <= VK_NUMPAD9) {
+            if (key >= VK_NUMPAD0 && key <= VK_NUMPAD9) {
                 return static_cast<KeyCode>(static_cast<uint32_t>(KeyCode::Numpad0) + (key - VK_NUMPAD0));
             }
 

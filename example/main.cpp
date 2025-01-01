@@ -80,6 +80,7 @@ int main() {
         std::cout << "Window moved: " << x << " x " << y << std::endl;
     });
 
+
     window->registerCloseCallback([]() {
         std::cout << "Closing..." << std::endl;
     });
@@ -100,7 +101,7 @@ int main() {
         // poll for events
         window->pollEvents();
 
-
+        // Draw
     }
 
     // Don't forget to destroy the window

@@ -15,10 +15,10 @@
 
 
 namespace Surfer {
-
     enum class KeyCode {
         // Alphabet
-        KeyA, KeyB, KeyC, KeyD, KeyE, KeyF, KeyG, KeyH, KeyI, KeyJ, KeyK, KeyL, KeyM, KeyN, KeyO, KeyP, KeyQ, KeyR, KeyS, KeyT, KeyU, KeyV, KeyW, KeyX, KeyY, KeyZ,
+        KeyA, KeyB, KeyC, KeyD, KeyE, KeyF, KeyG, KeyH, KeyI, KeyJ, KeyK, KeyL, KeyM, KeyN, KeyO, KeyP, KeyQ, KeyR,
+        KeyS, KeyT, KeyU, KeyV, KeyW, KeyX, KeyY, KeyZ,
 
         // Numbers
         Num0, Num1, Num2, Num3, Num4, Num5, Num6, Num7, Num8, Num9,
@@ -74,8 +74,8 @@ namespace Surfer {
     typedef std::function<void(uint32_t width, uint32_t height)> ResizeCallback;
     typedef std::function<void(int32_t x, int32_t y)> MoveCallback;
     typedef std::function<void()> CloseCallback;
-    typedef std::function <void(bool entered)> MouseEnterExitCallback;
-    typedef std::function <void(bool focused)> FocusCallback;
+    typedef std::function<void(bool entered)> MouseEnterExitCallback;
+    typedef std::function<void(bool focused)> FocusCallback;
 
     /**
      * Represents a single window
@@ -83,11 +83,11 @@ namespace Surfer {
     class Window {
     public:
         // We delete all constructors except one that is private
-        Window() = delete;                           // No default constructor
-        Window(const Window&) = delete;                // No copy constructor
-        Window(Window&&) = delete;                     // No move constructor
-        Window& operator=(const Window&) = delete;     // No copy assignment
-        Window& operator=(Window&&) = delete;          // No move assignment
+        Window() = delete; // No default constructor
+        Window(const Window &) = delete; // No copy constructor
+        Window(Window &&) = delete; // No move constructor
+        Window &operator=(const Window &) = delete; // No copy assignment
+        Window &operator=(Window &&) = delete; // No move assignment
 
         /**
          *  Creates and opens a window
@@ -99,7 +99,8 @@ namespace Surfer {
          * @param y Vertical position of the window on the screen
          * @return Window pointer
          */
-        static Window * createWindow(const std::string& title, const VkInstance instance, const uint32_t width, const uint32_t height, const int32_t x, const int32_t y) {
+        static Window *createWindow(const std::string &title, const VkInstance instance, const uint32_t width,
+                                    const uint32_t height, const int32_t x, const int32_t y) {
             return new Window(title, instance, width, height, x, y);
         }
 
@@ -107,7 +108,7 @@ namespace Surfer {
          * Destroy a window
          * @param window Window pointer
          */
-        static void destroyWindow(const Window * window) {
+        static void destroyWindow(const Window *window) {
             delete window;
         }
 
@@ -124,67 +125,72 @@ namespace Surfer {
          * Checks if window should be closed (e.g. user closed the window)
          * @return True if window should be closed, else returns false
          */
-        bool shouldClose() const {return _shouldClose;}
+        bool shouldClose() const { return _shouldClose; }
 
         /**
          * Returns Vulkan surface
          * @return VkSurfaceKHR Vulkan surface
          */
-        VkSurfaceKHR getSurface() const {return _surface;}
+        VkSurfaceKHR getSurface() const { return _surface; }
 
-        void getCursorPosition(unsigned int& x, unsigned int& y) const {x = _mouse_x; y = _mouse_y;}
+        void getCursorPosition(unsigned int &x, unsigned int &y) const {
+            x = _mouse_x;
+            y = _mouse_y;
+        }
 
         /**
          * Registers a callback that is triggered when a key is pressed. This can be a keyboard key or mouse key or any other.
          * @param callback KeyPressCallback function
          */
-        void registerKeyPressCallback(const KeyPressCallback &callback) {this->_keyPressCallback = callback;}
+        void registerKeyPressCallback(const KeyPressCallback &callback) { this->_keyPressCallback = callback; }
 
         /**
          * Registers a callback that is triggered when a key is released. This can be a keyboard key or mouse key or any other.
          * @param callback KeyReleaseCallback function
          */
-        void registerKeyReleaseCallback(const KeyReleaseCallback &callback) {this->_keyReleaseCallback = callback;}
+        void registerKeyReleaseCallback(const KeyReleaseCallback &callback) { this->_keyReleaseCallback = callback; }
 
         /**
          * Registers a callback that is triggered when a mouse is moved (cursor position has changed)
          * @param callback MouseMotionCallback function
          */
-        void registerMouseMotionCallback(const MouseMotionCallback &callback) {this->_mouseMotionCallback = callback;}
+        void registerMouseMotionCallback(const MouseMotionCallback &callback) { this->_mouseMotionCallback = callback; }
 
         /**
          * Registers a callback that is triggered when the window is resized
          * @param callback ResizeCallback function
          */
-        void registerResizeCallback(const ResizeCallback &callback) {this->_resizeCallback = callback;}
+        void registerResizeCallback(const ResizeCallback &callback) { this->_resizeCallback = callback; }
 
         /**
          * Registers a callback that is triggered when the window is moved on the screen.
          * @param callback MoveCallback function
          */
-        void registerMoveCallback(const MoveCallback &callback) {this->_moveCallback = callback;}
+        void registerMoveCallback(const MoveCallback &callback) { this->_moveCallback = callback; }
 
         /**
          * Registers a callback that is triggered when the window is closed.
          * @param callback CloseCallback function
          */
-        void registerCloseCallback(const CloseCallback &callback) {this->_closeCallback = callback;}
+        void registerCloseCallback(const CloseCallback &callback) { this->_closeCallback = callback; }
 
         /**
          * Registers a callback that is triggered when a mouse enter (true) or exits (false) the window
          * @param callback MouseEnterExitCallback function
          */
-        void registerMouseEnterExitCallback(const MouseEnterExitCallback &callback) {this->_mouseEnterExitCallback = callback;}
+        void registerMouseEnterExitCallback(const MouseEnterExitCallback &callback) {
+            this->_mouseEnterExitCallback = callback;
+        }
 
         /**
          * Registers a callback that is triggered when the window becomes in focus (true) or loses focus (false)
          * @param callback FocusCallback function
          */
-        void registerFocusCallback(const FocusCallback &callback) {this->_focusCallback = callback;}
+        void registerFocusCallback(const FocusCallback &callback) { this->_focusCallback = callback; }
 
     private:
-
-        Window(const std::string& title,const VkInstance instance, const uint32_t width, const uint32_t height, const int32_t x, const int32_t y) {
+        Window(const std::string &title, const VkInstance instance, const uint32_t width, const uint32_t height,
+               const int32_t x, const int32_t y) {
 #if defined(SURFER_PLATFORM_X11)
             X11_createWindow(title, instance, width, height, x, y);
 #endif
@@ -226,28 +232,29 @@ namespace Surfer {
         ::Window X11_root;
         Atom X11_wmDeleteMessage;
 
-        void X11_createWindow(const std::string& title,const VkInstance instance, const uint32_t width, const uint32_t height, const int32_t x, const int32_t y) {
-
+        void X11_createWindow(const std::string &title, const VkInstance instance, const uint32_t width,
+                              const uint32_t height, const int32_t x, const int32_t y) {
             _width = width;
             _height = height;
             _x = x;
             _y = y;
 
             X11_display = XOpenDisplay(nullptr);
-            if (!X11_display)
-            {
+            if (!X11_display) {
                 throw std::runtime_error("Failed to open X display");
             }
 
             X11_root = DefaultRootWindow(X11_display);
             XSetWindowAttributes windowAttributes;
             windowAttributes.background_pixel = WhitePixel(X11_display, 0);
-            windowAttributes.event_mask = ExposureMask | KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask |
-                                  PointerMotionMask | StructureNotifyMask | FocusChangeMask | EnterWindowMask |
-                                  LeaveWindowMask | ButtonMotionMask | FocusChangeMask | KeymapStateMask |
-                                  ExposureMask;
+            windowAttributes.event_mask =
+                    ExposureMask | KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask |
+                    PointerMotionMask | StructureNotifyMask | FocusChangeMask | EnterWindowMask |
+                    LeaveWindowMask | ButtonMotionMask | FocusChangeMask | KeymapStateMask |
+                    ExposureMask;
 
-            X11_window = XCreateWindow(X11_display, X11_root, x, y, width, height, 0, CopyFromParent, InputOutput, CopyFromParent, CWBackPixel | CWEventMask, &windowAttributes);
+            X11_window = XCreateWindow(X11_display, X11_root, x, y, width, height, 0, CopyFromParent, InputOutput,
+                                       CopyFromParent, CWBackPixel | CWEventMask, &windowAttributes);
 
             XStoreName(X11_display, X11_window, title.c_str());
             XMapWindow(X11_display, X11_window);
@@ -258,7 +265,8 @@ namespace Surfer {
 
             // Enable drag-and-drop support for the window (file drop handling)
             Atom XdndAware = XInternAtom(X11_display, "XdndAware", False);
-            XChangeProperty(X11_display, X11_window, XdndAware, XA_ATOM, 32, PropModeReplace, (unsigned char*)&XdndAware, 1);
+            XChangeProperty(X11_display, X11_window, XdndAware, XA_ATOM, 32, PropModeReplace,
+                            (unsigned char *) &XdndAware, 1);
 
             VkXlibSurfaceCreateInfoKHR surfaceInfo = {};
             surfaceInfo.sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
@@ -266,8 +274,7 @@ namespace Surfer {
             surfaceInfo.window = X11_window;
 
             VkResult result = vkCreateXlibSurfaceKHR(instance, &surfaceInfo, nullptr, &_surface);
-            if (result != VK_SUCCESS)
-            {
+            if (result != VK_SUCCESS) {
                 std::cerr << "Failed to create Vulkan surface\n";
                 exit(EXIT_FAILURE);
             }
@@ -279,14 +286,12 @@ namespace Surfer {
             vkDestroySurfaceKHR(_instance, _surface, nullptr);
             _surface = VK_NULL_HANDLE;
 
-            if (X11_window)
-            {
+            if (X11_window) {
                 XDestroyWindow(X11_display, X11_window);
                 X11_window = 0;
             }
 
-            if (X11_display)
-            {
+            if (X11_display) {
                 XCloseDisplay(X11_display);
                 X11_display = nullptr;
             }
@@ -294,8 +299,7 @@ namespace Surfer {
 
         void X11_pollEvents() {
             XEvent event;
-            while (XPending(X11_display) > 0)
-            {
+            while (XPending(X11_display) > 0) {
                 XNextEvent(X11_display, &event);
                 X11_processEvent(event);
             }
@@ -303,18 +307,15 @@ namespace Surfer {
 
         void X11_processEvent(XEvent event) {
             switch (event.type) {
-                case ClientMessage:
-                {
+                case ClientMessage: {
                     X11_onClose();
                     break;
                 }
-                case KeyPress:
-                {
+                case KeyPress: {
                     X11_onKeyPress(event.xkey.keycode);
                     break;
                 }
-                case KeyRelease:
-                {
+                case KeyRelease: {
                     X11_onKeyRelease(event.xkey.keycode);
                     break;
                 }
@@ -330,8 +331,7 @@ namespace Surfer {
                     X11_onMouseMotion(event.xmotion.x, event.xmotion.y);
                     break;
                 }
-                case ConfigureNotify:
-                {
+                case ConfigureNotify: {
                     const XConfigureEvent xce = event.xconfigure;
 
                     const bool moved = (xce.x != _x || xce.y != _y);
@@ -370,8 +370,7 @@ namespace Surfer {
             _shouldClose = true;
 
             XEvent event;
-            while (XPending(X11_display) > 0)
-            {
+            while (XPending(X11_display) > 0) {
                 XNextEvent(X11_display, &event);
             }
 
@@ -452,7 +451,6 @@ namespace Surfer {
                     }
                 }
             }
-
         }
 
         void X11_onMove(int32_t x, int32_t y) {
@@ -476,7 +474,6 @@ namespace Surfer {
 
         void X11_onMouseMotion(uint32_t x, uint32_t y) {
             if (_mouse_x != x || _mouse_y != y) {
-
                 // save the internal state
                 _mouse_x = x;
                 _mouse_y = y;
@@ -527,7 +524,8 @@ namespace Surfer {
             }
 
             // Example mapping for alphabet keys
-            if (x11KeyCode >= 38 && x11KeyCode <= 63) { // Assuming QWERTY layout
+            if (x11KeyCode >= 38 && x11KeyCode <= 63) {
+                // Assuming QWERTY layout
                 return static_cast<KeyCode>(static_cast<uint32_t>(KeyCode::KeyA) + (x11KeyCode - 38));
             }
 
@@ -541,7 +539,7 @@ namespace Surfer {
                 case 36: return KeyCode::Enter;
                 case 65: return KeyCode::Space;
                 case 23: return KeyCode::Tab;
-                case 9:  return KeyCode::Esc;
+                case 9: return KeyCode::Esc;
                 case 111: return KeyCode::ArrowUp;
                 case 116: return KeyCode::ArrowDown;
                 case 113: return KeyCode::ArrowLeft;
@@ -554,8 +552,6 @@ namespace Surfer {
 
 #endif
     };
-
-
 }
 
 #endif //VULKANSURFER_H

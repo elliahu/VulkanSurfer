@@ -45,7 +45,7 @@ int main() {
         return -1;
     }
 
-    // Now, we need a vulkan instance to create a Surfer::Window instance
+    // We need a vulkan instance to create a Surfer::Window instance
     Surfer::Window * window = Surfer::Window::createWindow("Example window", instance, 800, 600 , 100, 100 );
 
     // Now we can ga a surface to draw onto

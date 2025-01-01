@@ -6,7 +6,8 @@
 #include <vector>
 #include <vulkan/vulkan.h>
 #if defined(SURFER_PLATFORM_WIN32)
-#include <windows.h>
+#include "windows.h"
+#include <windowsx.h>
 #endif
 #if defined(SURFER_PLATFORM_X11)
 #include <X11/Xlib.h>
@@ -118,7 +119,9 @@ namespace Surfer {
          * Poll for events
          */
         void pollEvents() {
-#if defined(SURFER_PLATFORM_X11)
+#if defined(SURFER_PLATFORM_WIN32)
+            Win32_pollEvents();
+#elif defined(SURFER_PLATFORM_X11)
             X11_pollEvents();
 #endif
         }
@@ -200,13 +203,17 @@ namespace Surfer {
             if (width == 0 || height == 0) {
                 throw std::runtime_error("VulkanSurfer: width == 0 || height == 0");;
             }
-#if defined(SURFER_PLATFORM_X11)
+#if defined(SURFER_PLATFORM_WIN32)
+            Win32_createWindow(title, instance, width, height, x, y);
+#elif defined(SURFER_PLATFORM_X11)
             X11_createWindow(title, instance, width, height, x, y);
 #endif
         }
 
         ~Window() {
-#if defined(SURFER_PLATFORM_X11)
+#if defined(SURFER_PLATFORM_WIN32)
+            Win32_destroyWindow();
+#elif defined(SURFER_PLATFORM_X11)
             X11_destroyWindow();
 #endif
         }
@@ -221,6 +228,7 @@ namespace Surfer {
         int32_t _x, _y;
         uint32_t _mouse_x, _mouse_y;
         bool _focused, _mouseEntered;
+        std::string _title;
 
         // Callbacks
         KeyPressCallback _keyPressCallback = nullptr;
@@ -234,6 +242,363 @@ namespace Surfer {
 
 
 #if defined(SURFER_PLATFORM_WIN32)
+        HWND Win32_hWnd;
+        MSG Win32_msg{};
+        bool Win32_resizing = false;
+
+
+        void Win32_createWindow(const std::string &title, VkInstance instance, const uint32_t width,
+                                const uint32_t height, const int32_t x, const int32_t y) {
+            _width = width;
+            _height = height;
+            _x = x;
+            _y = y;
+            _title = title;
+
+            SetProcessDPIAware();
+
+            WNDCLASSEX wc = {};
+            wc.cbSize = sizeof(WNDCLASSEX);
+            wc.style = CS_HREDRAW | CS_VREDRAW;
+            wc.lpfnWndProc = this->WndProc;
+            wc.hInstance = GetModuleHandle(nullptr);
+            wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
+            wc.lpszClassName = title.c_str();
+
+            if (!RegisterClassEx(&wc)) {
+                throw std::runtime_error("VulkanSurfer: Failed to register window class");
+            }
+
+            // Calculate window rect to account for borders and title bar
+            RECT windowRect = {0, 0, width, height};
+            AdjustWindowRectEx(&windowRect, WS_OVERLAPPEDWINDOW, FALSE, 0);
+            int adjustedWidth = windowRect.right - windowRect.left;
+            int adjustedHeight = windowRect.bottom - windowRect.top;
+
+            Win32_hWnd = CreateWindowEx(
+                0,
+                wc.lpszClassName,
+                title.c_str(),
+                WS_OVERLAPPEDWINDOW,
+                x, y,
+                adjustedWidth, adjustedHeight, // Use adjusted dimensions
+                nullptr,
+                nullptr,
+                wc.hInstance,
+                this);
+
+            if (!Win32_hWnd) {
+                throw std::runtime_error("VulkanSurfer: Failed to create window");
+            }
+
+            SetWindowLongPtr(Win32_hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
+            ShowWindow(Win32_hWnd, SW_SHOW);
+            UpdateWindow(Win32_hWnd);
+
+            VkWin32SurfaceCreateInfoKHR surfaceCreateInfo = {};
+            surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+            surfaceCreateInfo.hwnd = Win32_hWnd;
+            surfaceCreateInfo.hinstance = wc.hInstance;
+
+            if (vkCreateWin32SurfaceKHR(instance, &surfaceCreateInfo, nullptr, &_surface) != VK_SUCCESS) {
+                throw std::runtime_error("VulkanSurfer: Failed to create Vulkan surface");
+            }
+        }
+
+        void Win32_destroyWindow() {
+            vkDestroySurfaceKHR(_instance, _surface, nullptr);
+            _surface = VK_NULL_HANDLE;
+
+            MSG msg;
+            while (PeekMessage(&msg, Win32_hWnd, 0, 0, PM_REMOVE)) {
+                TranslateMessage(&msg);
+                DispatchMessage(&msg);
+            }
+
+            if (Win32_hWnd) {
+                // Don't destroy if already being destroyed
+                if (IsWindow(Win32_hWnd)) {
+                    // This triggers WM_DESTROY
+                    DestroyWindow(Win32_hWnd);
+                }
+                Win32_hWnd = nullptr;
+            }
+
+            // Only unregister if we're the last window using this class
+            WNDCLASSEX wc = {};
+            wc.cbSize = sizeof(WNDCLASSEX);
+            if (GetClassInfoEx(GetModuleHandle(nullptr), _title.c_str(), &wc)) {
+                UnregisterClass(_title.c_str(), GetModuleHandle(nullptr));
+            }
+        }
+
+        void Win32_pollEvents() {
+            while (PeekMessage(&Win32_msg, nullptr, 0, 0, PM_REMOVE)) {
+                TranslateMessage(&Win32_msg);
+                DispatchMessage(&Win32_msg);
+            }
+        }
+
+        /// internal window procedure function for Win32 API
+        static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+            Window *window = reinterpret_cast<Window *>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
+
+            switch (uMsg) {
+                case WM_CLOSE:
+                    if (window) {
+                        window->Win32_onClose();
+                    }
+                    return 0;
+                case WM_DESTROY:
+                    SetWindowLongPtr(hWnd, GWLP_USERDATA, 0); // Clear user data
+                    PostQuitMessage(0);
+                    return 0;
+                case WM_PAINT:
+                    ValidateRect(hWnd, NULL);
+                    return 0;
+                case WM_KEYDOWN:
+                    if (window) {
+                        window->Win32_onKeyDown(wParam);
+                    }
+                    return 0;
+                case WM_KEYUP:
+                    if (window) {
+                        window->Win32_onKeyUp(wParam);
+                    }
+                    return 0;
+                case WM_LBUTTONDOWN: {
+                    if (window) {
+                        window->Win32_onButtonPress(WM_LBUTTONDOWN);
+                    }
+                    return 0;
+                }
+                case WM_RBUTTONDOWN: {
+                    if (window) {
+                        window->Win32_onButtonPress(WM_RBUTTONDOWN);
+                    }
+                    return 0;
+                }
+                case WM_MBUTTONDOWN: {
+                    if (window) {
+                        window->Win32_onButtonPress(WM_MBUTTONDOWN);
+                    }
+                    return 0;
+                }
+                case WM_LBUTTONUP: {
+                    if (window) {
+                        window->Win32_onButtonRelease(WM_LBUTTONUP);
+                    }
+                    return 0;
+                }
+                case WM_RBUTTONUP: {
+                    if (window) {
+                        window->Win32_onButtonRelease(WM_RBUTTONUP);
+                    }
+                    return 0;
+                }
+                case WM_MBUTTONUP: {
+                    if (window) {
+                        window->Win32_onButtonRelease(WM_MBUTTONUP);
+                    }
+                    return 0;
+                }
+                case WM_MOUSEMOVE: {
+                    int xPos = GET_X_LPARAM(lParam);
+                    int yPos = GET_Y_LPARAM(lParam);
+                    if (window)
+                        window->Win32_onMouseMove(xPos, yPos);
+                    return 0;
+                }
+                case WM_SIZE: // size changed
+                    if (window && wParam != SIZE_MINIMIZED) {
+                        if ((window->Win32_resizing) || ((wParam == SIZE_MAXIMIZED) || (wParam == SIZE_RESTORED))) {
+                            uint32_t width = LOWORD(lParam);
+                            uint32_t height = HIWORD(lParam);
+                            window->Win32_onResize(width, height);
+                        }
+                    }
+                    return 0;
+                case WM_ENTERSIZEMOVE: // resizing started
+                    window->Win32_resizing = true;
+                    return 0;
+                case WM_EXITSIZEMOVE: // resizing stopped
+                    window->Win32_resizing = false;
+                    return 0;
+                case WM_DPICHANGED:
+                    if (window) {
+                        window->Win32_onDpiChange(hWnd, wParam, lParam);
+                    }
+                    return 0;
+                case WM_MOVE: {
+                    if (window) {
+                        window->Win32_onMove(lParam);
+                    }
+                    return 0;
+                }
+                case WM_SETFOCUS: {
+                    if (window) {
+                        window->Win32_onFocusIn();
+                    }
+                }
+                case WM_KILLFOCUS: {
+                    if (window) {
+                        window->Win32_onFocusOut();
+                    }
+                }
+                default:
+                    return DefWindowProc(hWnd, uMsg, wParam, lParam);
+            }
+        }
+
+        void Win32_onKeyDown(WPARAM key) {
+            if(_keyPressCallback != nullptr) {
+                _keyPressCallback(Win32_translateKeyCode(key));
+            }
+        }
+
+        void Win32_onKeyUp(WPARAM key) {
+            if(_keyReleaseCallback != nullptr) {
+                _keyReleaseCallback(Win32_translateKeyCode(key));
+            }
+        }
+
+        void Win32_onClose() {
+            // Set should close first
+            _shouldClose = true;
+
+            // Wait for any pending messages
+            MSG msg;
+            while (PeekMessage(&msg, Win32_hWnd, 0, 0, PM_REMOVE)) {
+                TranslateMessage(&msg);
+                DispatchMessage(&msg);
+            }
+
+            if (_closeCallback != nullptr)
+                _closeCallback();
+        }
+
+        void Win32_onMouseMove(int xPos, int yPos) {
+            _x = xPos;
+            _y = yPos;
+
+            if (_mouseMotionCallback != nullptr) {
+                _mouseMotionCallback(_x, _y);
+            }
+        }
+
+        void Win32_onButtonPress(UINT button) {
+            switch (button) {
+                case WM_LBUTTONDOWN: {
+                    if (_keyPressCallback != nullptr) {
+                        _keyPressCallback(KeyCode::MouseLeft);
+                    }
+                    break;
+                }
+                case WM_RBUTTONDOWN: {
+                    if (_keyPressCallback != nullptr) {
+                        _keyPressCallback(KeyCode::MouseRight);
+                    }
+                    break;
+                }
+                case WM_MBUTTONDOWN: {
+                    if (_keyPressCallback != nullptr) {
+                        _keyPressCallback(KeyCode::MouseMiddle);
+                    }
+                    break;
+                }
+            }
+        }
+
+        void Win32_onButtonRelease(UINT button) {
+            switch (button) {
+                case WM_LBUTTONUP: {
+                    if (_keyReleaseCallback != nullptr) {
+                        _keyReleaseCallback(KeyCode::MouseLeft);
+                    }
+                    break;
+                }
+                case WM_RBUTTONUP: {
+                    if (_keyReleaseCallback != nullptr) {
+                        _keyReleaseCallback(KeyCode::MouseRight);
+                    }
+                    break;
+                }
+                case WM_MBUTTONUP: {
+                    if (_keyReleaseCallback != nullptr) {
+                        _keyReleaseCallback(KeyCode::MouseMiddle);
+                    }
+                    break;
+                }
+            }
+        }
+
+        void Win32_onResize(uint32_t width, uint32_t height) {
+            _width = width;
+            _height = height;
+
+            if (_resizeCallback != nullptr) {
+                _resizeCallback(width, height);
+            }
+        }
+
+        void Win32_onMove(LPARAM lParam) {
+            int x = LOWORD(lParam);
+            int y = HIWORD(lParam);
+
+            if(x != _x || y != _y) {
+
+                _x = x;
+                _y = y;
+
+                if (_moveCallback != nullptr) {
+                    _moveCallback(x, y);
+                }
+            }
+        }
+
+        void Win32_onDpiChange(HWND hWnd, WPARAM wParam, LPARAM lParam) {
+            UINT dpi = HIWORD(wParam);
+            RECT *const pRect = reinterpret_cast<RECT *>(lParam);
+
+            if (pRect) {
+                SetWindowPos(hWnd,
+                             nullptr,
+                             pRect->left,
+                             pRect->top,
+                             pRect->right - pRect->left,
+                             pRect->bottom - pRect->top,
+                             SWP_NOZORDER | SWP_NOACTIVATE);
+            }
+        }
+
+        void Win32_onFocusIn() {
+            _focused = true;
+            if (_focusCallback != nullptr) {
+                _focusCallback(true);
+            }
+        }
+
+        void Win32_onFocusOut() {
+            _focused = false;
+            if (_focusCallback != nullptr) {
+                _focusCallback(false);
+            }
+        }
+
+        KeyCode Win32_translateKeyCode(WPARAM key) {
+            // A - Z
+            if(key >= 0x41 && key <= 0x5A) {
+                return static_cast<KeyCode>(static_cast<uint32_t>(KeyCode::KeyA) + (key - 0x41));
+            }
+
+            // Numpad 0-9
+            if(key >= VK_NUMPAD0 && key <= VK_NUMPAD9) {
+                return static_cast<KeyCode>(static_cast<uint32_t>(KeyCode::Numpad0) + (key - VK_NUMPAD0));
+            }
+
+            return KeyCode::UnsupportedKey;
+        }
+
 
 #elif defined(SURFER_PLATFORM_X11)
         Display *X11_display;
@@ -247,6 +612,7 @@ namespace Surfer {
             _height = height;
             _x = x;
             _y = y;
+            _title = title;
 
             X11_display = XOpenDisplay(nullptr);
             if (!X11_display) {

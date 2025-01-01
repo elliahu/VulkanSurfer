@@ -55,7 +55,7 @@ Event callbacks:
   - **X11 (Supported)**
   - *Wayland (Not supported, planned)*
 - Windows
-  - Win32 (Not supported, planned, up next)
-  - WinnApp (Not supported, planned)
+  - Win32 (Supported, not all features at the moment)
+  - *WinnApp (Not supported, planned)*
 - MacOs
-  - Metal (Not supported)
+  - *Metal (Not supported)*

@@ -10,6 +10,7 @@
 #endif
 #if defined(SURFER_PLATFORM_X11)
 #include <X11/Xlib.h>
+#include <X11/Xatom.h>
 #endif
 
 
@@ -241,7 +242,10 @@ namespace Surfer {
             X11_root = DefaultRootWindow(X11_display);
             XSetWindowAttributes windowAttributes;
             windowAttributes.background_pixel = WhitePixel(X11_display, 0);
-            windowAttributes.event_mask = ExposureMask | KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask | StructureNotifyMask | FocusChangeMask | EnterWindowMask;
+            windowAttributes.event_mask = ExposureMask | KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask |
+                                  PointerMotionMask | StructureNotifyMask | FocusChangeMask | EnterWindowMask |
+                                  LeaveWindowMask | ButtonMotionMask | FocusChangeMask | KeymapStateMask |
+                                  ExposureMask;
 
             X11_window = XCreateWindow(X11_display, X11_root, x, y, width, height, 0, CopyFromParent, InputOutput, CopyFromParent, CWBackPixel | CWEventMask, &windowAttributes);
 
@@ -251,6 +255,10 @@ namespace Surfer {
 
             X11_wmDeleteMessage = XInternAtom(X11_display, "WM_DELETE_WINDOW", False);
             XSetWMProtocols(X11_display, X11_window, &X11_wmDeleteMessage, 1);
+
+            // Enable drag-and-drop support for the window (file drop handling)
+            Atom XdndAware = XInternAtom(X11_display, "XdndAware", False);
+            XChangeProperty(X11_display, X11_window, XdndAware, XA_ATOM, 32, PropModeReplace, (unsigned char*)&XdndAware, 1);
 
             VkXlibSurfaceCreateInfoKHR surfaceInfo = {};
             surfaceInfo.sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;

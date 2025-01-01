@@ -67,7 +67,7 @@ namespace Surfer {
         MouseWheelUp, MouseWheelDown, MouseWheelLeft, MouseWheelRight,
 
         // Unspecified/Future Extensions
-        Unknown
+        UnsupportedKey
     };
 
     typedef std::function<void(KeyCode key)> KeyPressCallback;
@@ -426,7 +426,7 @@ namespace Surfer {
                 }
                 default: {
                     if (_keyPressCallback != nullptr) {
-                        _keyPressCallback(KeyCode::Unknown);
+                        _keyPressCallback(KeyCode::UnsupportedKey);
                     }
                 }
             }
@@ -455,7 +455,7 @@ namespace Surfer {
                 }
                 default: {
                     if (_keyReleaseCallback != nullptr) {
-                        _keyReleaseCallback(KeyCode::Unknown);
+                        _keyReleaseCallback(KeyCode::UnsupportedKey);
                     }
                 }
             }
@@ -545,7 +545,7 @@ namespace Surfer {
             }
 
 
-            return KeyCode::Unknown;
+            return KeyCode::UnsupportedKey;
         }
 
 

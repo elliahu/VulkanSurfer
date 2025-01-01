@@ -138,10 +138,21 @@ namespace Surfer {
          */
         VkSurfaceKHR getSurface() const { return _surface; }
 
+        /**
+         * Function returns cursors position in window relative to top left corner
+         * @param x Horizontal position reference
+         * @param y Vertical position reference
+         */
         void getCursorPosition(unsigned int &x, unsigned int &y) const {
             x = _mouse_x;
             y = _mouse_y;
         }
+
+#if defined(SURFER_PLATFORM_WIN32)
+        HWND getNativeWindowPtr() const {return Win32_hWnd;}
+#elif defined(SURFER_PLATFORM_X11)
+        ::Window  getNativeWindowPtr() const {return X11_window;}
+#endif
 
         /**
          * Registers a callback that is triggered when a key is pressed. This can be a keyboard key or mouse key or any other.

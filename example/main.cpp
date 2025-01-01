@@ -101,6 +101,10 @@ int main() {
         // poll for events
         window->pollEvents();
 
+        // cursor position can be retrieved like this as well as using the callback
+        unsigned int x,y;
+        window->getCursorPosition(x,y);
+
         // Draw
     }
 

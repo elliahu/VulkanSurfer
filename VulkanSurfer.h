@@ -409,8 +409,25 @@ namespace Surfer {
                 case WM_MOUSEMOVE: {
                     int xPos = GET_X_LPARAM(lParam);
                     int yPos = GET_Y_LPARAM(lParam);
-                    if (window)
+                    if (window) {
                         window->Win32_onMouseMove(xPos, yPos);
+
+                        TRACKMOUSEEVENT tme = {};
+                        tme.cbSize = sizeof(tme);
+                        tme.dwFlags = TME_LEAVE;
+                        tme.hwndTrack = window->Win32_hWnd;
+                        TrackMouseEvent(&tme);
+
+                        if(!window->_mouseEntered) {
+                            window->Win32_onMouseEnter();
+                        }
+                    }
+                    return 0;
+                }
+                case WM_MOUSELEAVE: {
+                    if (window) {
+                        window->Win32_onMouseLeave();
+                    }
                     return 0;
                 }
                 case WM_SIZE: // size changed
@@ -451,6 +468,21 @@ namespace Surfer {
                 }
                 default:
                     return DefWindowProc(hWnd, uMsg, wParam, lParam);
+            }
+        }
+
+        void Win32_onMouseEnter() {
+            _mouseEntered = true;
+            if(_mouseEnterExitCallback != nullptr) {
+                _mouseEnterExitCallback(true);
+            }
+        }
+
+
+        void Win32_onMouseLeave() {
+            _mouseEntered = false;
+            if(_mouseEnterExitCallback != nullptr) {
+                _mouseEnterExitCallback(false);
             }
         }
 

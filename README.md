@@ -1,8 +1,8 @@
 # VulkanSurfer
 
 ***Important note:*** This project is in early stage of development. Only Linux (X11) and Windows (Win32) is supported at the moment.
-Key translation from native keycodes is currently in development. Only basic keys are supported as of now.
-Please se support section bellow.
+Key translation from native keycodes is currently in development. Only basic keys (those on a common keyboard) are supported as of now.
+Please se support section to see which platforms are supported and Callback-based event handling section to see how to handle unsupported keys.
 
 A minimal cross-platform object-oriented c++11 header only window library for Vulkan.
 
@@ -51,6 +51,9 @@ Event callbacks:
 - `CloseCallback` - window was closed
 - `MouseEnterExitCallback` - mouse entered / exited the window
 - `FocusCallback` - window is in / out of focus
+
+### How to handle unsupported keys
+If a key you wish to use is unsupported by Surfer (this can be due to the un-complete mapping or the key is just not defined), you can use `NativeKeyPressCallback` and `NativeKeyReleaseCallback` that when called passes the native keycode when any key is pressed. This way you can add support for missing key by yourself. See docs for your platform.
 
 ## Platforms
 Currently, VulkanSurfer targets windows using Win32 API and Linux using X11. Other native APIs might be added in the future.

@@ -34,6 +34,12 @@ while (!window->shouldClose()) {
 Surfer::Window::destroyWindow(window);
 ```
 See the full example in the `example` directory.
+### Native window pointer
+If you wish to expand your window functionality beyond what Surfer offers and supports, you can retrieve a native window pointer.
+```c++
+auto wnd = window->getNativeWindowPtr();
+```
+This returns a native window pointer specific to your platform (e.g. HWND for Win32) which can be used however you like.
 
 ## Callback-based event handling
 Event handling is done using simple callback system.

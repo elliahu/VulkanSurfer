@@ -7,7 +7,7 @@ Please se support section bellow.
 A minimal cross-platform object-oriented c++11 header only window library for Vulkan.
 
 This project aims to make creation of a window with a Vulkan surface and basic event handling as simple and portable as possible.
-If you just need to open a simple window with basing event/input handling for your Vulkan projects, this is the tool you need. 
+If you just need a window with Vulkan surface and basic event handling, this is the tool you need. 
 Library is header-only single file and there is no need for implementation files. Just drop it into you project.
 
 ## Simple API

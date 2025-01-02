@@ -87,7 +87,6 @@ int main() {
         std::cout << "Window moved: " << x << " x " << y << std::endl;
     });
 
-
     window->registerCloseCallback([]() {
         std::cout << "Closing..." << std::endl;
     });
@@ -101,6 +100,12 @@ int main() {
         if (focused) {std::cout << "Window is in focus." << std::endl;}
         else {std::cout << "Window is out of focus." << std::endl;}
     });
+
+    window->registerNativeKeyPressCallback([](KeySym sym) {
+        std::cout << "Native key: " << sym << std::endl;
+    });
+
+    // same for native key release
 
 
     // Window loop

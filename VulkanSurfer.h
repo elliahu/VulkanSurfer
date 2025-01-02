@@ -75,6 +75,12 @@ namespace Surfer {
     typedef std::function<void(bool entered)> MouseEnterExitCallback;
     typedef std::function<void(bool focused)> FocusCallback;
 
+#if defined(SURFER_PLATFORM_WIN32)
+#elif defined(SURFER_PLATFORM_X11)
+    typedef std::function<void(KeySym keySym)> NativeKeyPressCallback;
+    typedef std::function<void(KeySym keySym)> NativeKeyReleaseCallback;
+#endif
+
     /**
      * Represents a single window
      */
@@ -199,6 +205,20 @@ namespace Surfer {
          */
         void registerFocusCallback(const FocusCallback &callback) { this->_focusCallback = callback; }
 
+        /**
+         * Registers a callback that is triggered when any key is press and native KeySym is passed to the callback
+         * This can be used if a needed key mapping is not supported by Surfer (un-complete mapping or unsupported key)
+         * @param callback NativeKeyPressCallback function
+         */
+        void registerNativeKeyPressCallback(const NativeKeyPressCallback &callback) {this->_nativeKeyPressCallback = callback; }
+
+        /**
+         * Registers a callback that is triggered when any key is released and native KeySym is passed to the callback
+         * This can be used if a needed key mapping is not supported by Surfer (un-complete mapping or unsupported key)
+         * @param callback NativeKeyReleaseCallback function
+         */
+        void registerNativeKeyReleaseCallback(const NativeKeyReleaseCallback &callback) {this->_nativeKeyReleaseCallback = callback; }
+
     protected:
         Window(const std::string &title, VkInstance instance, const uint32_t width, const uint32_t height,
                const int32_t x, const int32_t y): _instance(instance) {
@@ -245,6 +265,10 @@ namespace Surfer {
         CloseCallback _closeCallback = nullptr;
         MouseEnterExitCallback _mouseEnterExitCallback = nullptr;
         FocusCallback _focusCallback = nullptr;
+        NativeKeyPressCallback _nativeKeyPressCallback = nullptr;
+        NativeKeyReleaseCallback _nativeKeyReleaseCallback = nullptr;
+
+
 
 
 #if defined(SURFER_PLATFORM_WIN32)
@@ -797,18 +821,28 @@ namespace Surfer {
         }
 
         void X11_onKeyPress(unsigned int x11KeyCode) {
-            const KeyCode transledKeyCode = X11_translateKeyCode(x11KeyCode);
+            KeySym keySym = XkbKeycodeToKeysym(X11_display, x11KeyCode, 0, 0);
+            const KeyCode transledKeyCode = X11_translateKeyCode(keySym);
 
             if (_keyPressCallback != nullptr) {
                 _keyPressCallback(transledKeyCode);
             }
+
+            if (_nativeKeyPressCallback != nullptr) {
+                _nativeKeyPressCallback(keySym);
+            }
         }
 
         void X11_onKeyRelease(unsigned int x11KeyCode) {
-            const KeyCode transledKeyCode = X11_translateKeyCode(x11KeyCode);
+            KeySym keySym = XkbKeycodeToKeysym(X11_display, x11KeyCode, 0, 0);
+            const KeyCode transledKeyCode = X11_translateKeyCode(keySym);
 
             if (_keyReleaseCallback != nullptr) {
                 _keyReleaseCallback(transledKeyCode);
+            }
+
+            if (_nativeKeyReleaseCallback != nullptr) {
+                _nativeKeyReleaseCallback(keySym);
             }
         }
 
@@ -954,8 +988,7 @@ namespace Surfer {
         }
 
         // Map raw X11 keycodes to KeyCode
-        KeyCode X11_translateKeyCode(unsigned int x11KeyCode, unsigned int modifiers = 0) {
-            KeySym keySym = XkbKeycodeToKeysym(X11_display, x11KeyCode, 0, 0);
+        KeyCode X11_translateKeyCode(KeySym keySym, unsigned int modifiers = 0) {
 
             // a-z
             if (keySym >= XK_a && keySym <= XK_z) {

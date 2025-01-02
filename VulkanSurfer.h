@@ -38,7 +38,6 @@ namespace Surfer {
 
         // Function Keys
         F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12,
-        F13, F14, F15, F16, F17, F18, F19, F20, F21, F22, F23, F24, // Extended function keys
 
         // Modifiers
         LeftShift, RightShift, LeftControl, RightControl, LeftAlt, RightAlt, SuperLeft, SuperRight,
@@ -57,21 +56,11 @@ namespace Surfer {
         Enter, Space, Tab, Esc, PrtSc, Pause,
 
         // Symbols
-        Minus, Equal, BracketLeft, BracketRight, Semicolon, Quote, Comma, Period, Slash, Backslash, Grave,
-
-        // Media Keys (Optional)
-        MediaPlayPause, MediaStop, MediaNext, MediaPrevious,
-        VolumeUp, VolumeDown, Mute,
-
-        // System Keys
-        Power, Sleep, WakeUp,
-
-        // Language and Application Keys
-        ContextMenu, Lang1, Lang2, // For international layouts
+        Minus, Equal, BracketLeft, BracketRight, Semicolon, Apostrophe, Comma, Period, Slash, Backslash, Grave,
 
         // Mouse Buttons
-        MouseLeft, MouseRight, MouseMiddle, MouseButton4, MouseButton5,
-        MouseWheelUp, MouseWheelDown, MouseWheelLeft, MouseWheelRight,
+        MouseLeft, MouseRight, MouseMiddle,
+        MouseWheelUp, MouseWheelDown,
 
         // Unspecified/Future Extensions
         UnsupportedKey
@@ -844,6 +833,18 @@ namespace Surfer {
                     }
                     break;
                 }
+                case Button4: {
+                    if (_keyPressCallback != nullptr) {
+                        _keyPressCallback(KeyCode::MouseWheelUp);
+                    }
+                    break;
+                }
+                case Button5: {
+                    if (_keyPressCallback != nullptr) {
+                        _keyPressCallback(KeyCode::MouseWheelDown);
+                    }
+                    break;
+                }
                 default: {
                     if (_keyPressCallback != nullptr) {
                         _keyPressCallback(KeyCode::UnsupportedKey);
@@ -870,6 +871,18 @@ namespace Surfer {
                 case Button3: {
                     if (_keyReleaseCallback != nullptr) {
                         _keyReleaseCallback(KeyCode::MouseMiddle);
+                    }
+                    break;
+                }
+                case Button4: {
+                    if (_keyReleaseCallback != nullptr) {
+                        _keyReleaseCallback(KeyCode::MouseWheelUp);
+                    }
+                    break;
+                }
+                case Button5: {
+                    if (_keyReleaseCallback != nullptr) {
+                        _keyReleaseCallback(KeyCode::MouseWheelDown);
                     }
                     break;
                 }
@@ -954,15 +967,128 @@ namespace Surfer {
                 return static_cast<KeyCode>(static_cast<uint32_t>(KeyCode::KeyA) + (keySym - XK_A));
             }
 
-            // 1-9
+            // 0-9
             if (keySym >= XK_0 && keySym <= XK_9) {
                 return static_cast<KeyCode>(static_cast<uint32_t>(KeyCode::Num0) + (keySym - XK_0));
             }
 
-            // Numpad 1-9
+            if (keySym == XK_plus) {return KeyCode::Num1;}
+            if (keySym == XK_ecaron) {return KeyCode::Num2;}
+            if (keySym == XK_scaron) {return KeyCode::Num3;}
+            if (keySym == XK_ccaron) {return KeyCode::Num4;}
+            if (keySym == XK_rcaron) {return KeyCode::Num5;}
+            if (keySym == XK_zcaron) {return KeyCode::Num6;}
+            if (keySym == XK_yacute) {return KeyCode::Num7;}
+            if (keySym == XK_aacute) {return KeyCode::Num8;}
+            if (keySym == XK_iacute) {return KeyCode::Num9;}
+            if (keySym == XK_eacute) {return KeyCode::Num0;}
+
+            // Numpad numbers
             if (keySym >= XK_KP_0 && keySym <= XK_KP_9) {
                 return static_cast<KeyCode>(static_cast<uint32_t>(KeyCode::Numpad0) + (keySym - XK_KP_0));
             }
+
+            if (keySym == XK_KP_Insert) {return KeyCode::Numpad0;}
+            if (keySym == XK_KP_Delete) {return KeyCode::NumpadDecimal;}
+            if (keySym == XK_KP_End) {return KeyCode::Numpad1;}
+            if (keySym == XK_KP_Down) {return KeyCode::Numpad2;}
+            if (keySym == XK_KP_Page_Down) {return KeyCode::Numpad3;}
+            if (keySym == XK_KP_Left) {return KeyCode::Numpad4;}
+            if (keySym == XK_KP_Begin) {return KeyCode::Numpad5;}
+            if (keySym == XK_KP_Right) {return KeyCode::Numpad6;}
+            if (keySym == XK_KP_Home) {return KeyCode::Numpad7;}
+            if (keySym == XK_KP_Up) {return KeyCode::Numpad8;}
+            if (keySym == XK_KP_Page_Up) {return KeyCode::Numpad9;}
+
+            // numpad non-number buttons
+            if (keySym == XK_KP_Add) {return KeyCode::NumpadAdd;}
+            if (keySym == XK_KP_Subtract) {return KeyCode::NumpadSubtract;}
+            if (keySym == XK_KP_Divide) {return KeyCode::NumpadDivide;}
+            if (keySym == XK_KP_Multiply) {return KeyCode::NumpadMultiply;}
+            if (keySym == XK_KP_Decimal) {return KeyCode::NumpadDecimal;}
+            if (keySym == XK_KP_Enter) {return KeyCode::NumpadEnter;}
+            if (keySym == XK_KP_Equal) {return KeyCode::NumpadEqual;}
+
+            // function keys
+            if (keySym >= XK_F1 && keySym <= XK_F11) {
+                return static_cast<KeyCode>(static_cast<uint32_t>(KeyCode::F1) + (keySym - XK_F1));
+            }
+            if (keySym == XK_F12) {return KeyCode::F12;} // F12 is not right after F11 in XK for some reason ??
+
+            // Modifiers
+            if (keySym == XK_Shift_L) {return KeyCode::LeftShift;}
+            if (keySym == XK_Shift_R) {return KeyCode::RightShift;}
+            if (keySym == XK_Control_L) {return KeyCode::LeftControl;}
+            if (keySym == XK_Control_R) {return KeyCode::RightControl;}
+            if (keySym == XK_Alt_L) {return KeyCode::LeftAlt;}
+            if (keySym == XK_Alt_R) {return KeyCode::RightAlt;}
+            if (keySym == XK_ISO_Level3_Shift) {return KeyCode::RightAlt;} // why ?
+            if (keySym == XK_Super_L) {return KeyCode::SuperLeft;}
+            if (keySym == XK_Super_R) {return KeyCode::SuperRight;}
+            if (keySym == XK_Caps_Lock) {return KeyCode::CapsLock;}
+            if (keySym == XK_Num_Lock) {return KeyCode::NumLock;}
+            if (keySym == XK_Scroll_Lock) {return KeyCode::ScrollLock;}
+
+            // arrows
+            if (keySym == XK_Up) {return KeyCode::ArrowUp;}
+            if (keySym == XK_Down) {return KeyCode::ArrowDown;}
+            if (keySym == XK_Left) {return KeyCode::ArrowLeft;}
+            if (keySym == XK_Right) {return KeyCode::ArrowRight;}
+
+            // navigation
+            if (keySym == XK_Home) {return KeyCode::Home;}
+            if (keySym == XK_End) {return KeyCode::End;}
+            if (keySym == XK_Page_Up) {return KeyCode::PageUp;}
+            if (keySym == XK_Page_Down) {return KeyCode::PageDown;}
+
+            // editing
+            if (keySym == XK_BackSpace) {return KeyCode::BackSpace;}
+            if (keySym == XK_Delete) {return KeyCode::Delete;}
+            if (keySym == XK_Insert) {return KeyCode::Insert;}
+
+            // Special
+            if (keySym == XK_Return) {return KeyCode::Enter;}
+            if (keySym == XK_space) {return KeyCode::Space;}
+            if (keySym == XK_Tab) {return KeyCode::Tab;}
+            if (keySym == XK_Escape) {return KeyCode::Esc;}
+            if (keySym == XK_Print) {return KeyCode::PrtSc;}
+            if (keySym == XK_Pause) {return KeyCode::Pause;}
+
+            // Symbols
+            if (keySym == XK_uring) {return KeyCode::Semicolon;}
+            if (keySym == XK_semicolon) {return KeyCode::Semicolon;}
+
+            if (keySym == XK_equal) {return KeyCode::Equal;}
+            if (keySym == XK_dead_acute) {return KeyCode::Equal;}
+
+            if (keySym == XK_parenleft) {return KeyCode::BracketLeft;}
+            if (keySym == XK_braceleft) {return KeyCode::BracketLeft;}
+            if (keySym == XK_uacute) {return KeyCode::BracketLeft;}
+
+
+            if (keySym == XK_braceright) {return KeyCode::BracketRight;}
+            if (keySym == XK_parenright) {return KeyCode::BracketRight;}
+
+
+            if (keySym == XK_quotedbl) {return KeyCode::Apostrophe;}
+            if (keySym == XK_apostrophe) {return KeyCode::Apostrophe;}
+            if (keySym == XK_section) {return KeyCode::Apostrophe;}
+
+            if (keySym == XK_comma) {return KeyCode::Comma;}
+            if (keySym == XK_guillemotleft) {return KeyCode::Comma;}
+
+            if (keySym == XK_period) {return KeyCode::Period;}
+            if (keySym == XK_guillemotright) {return KeyCode::Period;}
+
+
+            if (keySym == XK_slash) {return KeyCode::Slash;}
+            if (keySym == XK_minus) {return KeyCode::Slash;}
+
+            if (keySym == XK_bar) {return KeyCode::Backslash;}
+            if (keySym == XK_backslash) {return KeyCode::Backslash;}
+            if (keySym == XK_dead_diaeresis) {return KeyCode::Backslash;}
+
+            if (keySym == XK_grave) {return KeyCode::Grave;}
 
 
             return KeyCode::UnsupportedKey;

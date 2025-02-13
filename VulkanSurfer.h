@@ -10,7 +10,6 @@
 #include <functional>
 #include <string>
 #include <vector>
-#include <vulkan/vulkan.h>
 #if defined(SURFER_PLATFORM_WIN32)
 #include "windows.h"
 #include <windowsx.h>
@@ -20,6 +19,11 @@
 #include <X11/Xatom.h>
 #include <X11/XKBlib.h>
 #include <X11/Xutil.h>
+#endif
+
+#include <vulkan/vulkan.h>
+#if defined(SURFER_PLATFORM_X11)
+#include <vulkan/vulkan_xlib.h>
 #endif
 
 

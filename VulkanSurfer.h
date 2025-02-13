@@ -80,6 +80,8 @@ namespace Surfer {
     typedef std::function<void(bool focused)> FocusCallback;
 
 #if defined(SURFER_PLATFORM_WIN32)
+    typedef std::function<void(WPARAM wParam)> NativeKeyPressCallback;
+    typedef std::function<void(WPARAM wParam)> NativeKeyReleaseCallback;
 #elif defined(SURFER_PLATFORM_X11)
     typedef std::function<void(KeySym keySym)> NativeKeyPressCallback;
     typedef std::function<void(KeySym keySym)> NativeKeyReleaseCallback;
@@ -524,11 +526,19 @@ namespace Surfer {
             if (_keyPressCallback != nullptr) {
                 _keyPressCallback(Win32_translateKeyCode(key));
             }
+
+            if (_nativeKeyPressCallback != nullptr) {
+                _nativeKeyPressCallback(key);
+            }
         }
 
         void Win32_onKeyUp(WPARAM key) {
             if (_keyReleaseCallback != nullptr) {
                 _keyReleaseCallback(Win32_translateKeyCode(key));
+            }
+
+            if (_nativeKeyReleaseCallback != nullptr) {
+                _nativeKeyReleaseCallback(key);
             }
         }
 

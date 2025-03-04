@@ -22,6 +22,9 @@
 #endif
 
 #include <vulkan/vulkan.h>
+#if defined(SURFER_PLATFORM_WIN32)
+#include <vulkan/vulkan_win32.h>
+#endif
 #if defined(SURFER_PLATFORM_X11)
 #include <vulkan/vulkan_xlib.h>
 #endif

@@ -101,9 +101,17 @@ int main() {
         else {std::cout << "Window is out of focus." << std::endl;}
     });
 
+#ifdef SURFER_PLATFORM_X11
     window->registerNativeKeyPressCallback([](KeySym sym) {
         std::cout << "Native key: " << sym << std::endl;
     });
+#endif
+
+#ifdef SURFER_PLATFORM_WIN32
+    window->registerNativeKeyPressCallback([](WPARAM sym) {
+        std::cout << "Native key: " << sym << std::endl;
+    });
+#endif
 
     // same for native key release
 

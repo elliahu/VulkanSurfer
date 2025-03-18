@@ -683,6 +683,13 @@ namespace Surfer {
                 return static_cast<KeyCode>(static_cast<uint32_t>(KeyCode::Numpad0) + (key - VK_NUMPAD0));
             }
 
+            // Arrows
+            if (key == VK_UP) return KeyCode::ArrowUp;
+            if (key == VK_DOWN) return KeyCode::ArrowDown;
+            if (key == VK_LEFT) return KeyCode::ArrowLeft;
+            if (key == VK_RIGHT) return KeyCode::ArrowRight;
+
+
             return KeyCode::UnsupportedKey;
         }
 

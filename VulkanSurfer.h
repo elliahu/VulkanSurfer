@@ -10,6 +10,7 @@
 #include <functional>
 #include <string>
 #include <vector>
+#include <stdexcept>
 #if defined(SURFER_PLATFORM_WIN32)
 #include "windows.h"
 #include <windowsx.h>
@@ -159,7 +160,7 @@ namespace Surfer {
         }
 
 #if defined(SURFER_PLATFORM_WIN32)
-        HWND getNativeWindowPtr() const {return Win32_hWnd;}
+        HWND getNativeWindowPtr() const { return Win32_hWnd; }
 #elif defined(SURFER_PLATFORM_X11)
         ::Window  getNativeWindowPtr() const {return X11_window;}
 #endif
@@ -219,14 +220,18 @@ namespace Surfer {
          * This can be used if a needed key mapping is not supported by Surfer (un-complete mapping or unsupported key)
          * @param callback NativeKeyPressCallback function
          */
-        void registerNativeKeyPressCallback(const NativeKeyPressCallback &callback) {this->_nativeKeyPressCallback = callback; }
+        void registerNativeKeyPressCallback(const NativeKeyPressCallback &callback) {
+            this->_nativeKeyPressCallback = callback;
+        }
 
         /**
          * Registers a callback that is triggered when any key is released and native KeySym is passed to the callback
          * This can be used if a needed key mapping is not supported by Surfer (un-complete mapping or unsupported key)
          * @param callback NativeKeyReleaseCallback function
          */
-        void registerNativeKeyReleaseCallback(const NativeKeyReleaseCallback &callback) {this->_nativeKeyReleaseCallback = callback; }
+        void registerNativeKeyReleaseCallback(const NativeKeyReleaseCallback &callback) {
+            this->_nativeKeyReleaseCallback = callback;
+        }
 
     protected:
         Window(const std::string &title, VkInstance instance, const uint32_t width, const uint32_t height,
@@ -276,8 +281,6 @@ namespace Surfer {
         FocusCallback _focusCallback = nullptr;
         NativeKeyPressCallback _nativeKeyPressCallback = nullptr;
         NativeKeyReleaseCallback _nativeKeyReleaseCallback = nullptr;
-
-
 
 
 #if defined(SURFER_PLATFORM_WIN32)
@@ -457,7 +460,7 @@ namespace Surfer {
                         tme.hwndTrack = window->Win32_hWnd;
                         TrackMouseEvent(&tme);
 
-                        if(!window->_mouseEntered) {
+                        if (!window->_mouseEntered) {
                             window->Win32_onMouseEnter();
                         }
                     }
@@ -512,7 +515,7 @@ namespace Surfer {
 
         void Win32_onMouseEnter() {
             _mouseEntered = true;
-            if(_mouseEnterExitCallback != nullptr) {
+            if (_mouseEnterExitCallback != nullptr) {
                 _mouseEnterExitCallback(true);
             }
         }
@@ -520,7 +523,7 @@ namespace Surfer {
 
         void Win32_onMouseLeave() {
             _mouseEntered = false;
-            if(_mouseEnterExitCallback != nullptr) {
+            if (_mouseEnterExitCallback != nullptr) {
                 _mouseEnterExitCallback(false);
             }
         }
@@ -688,6 +691,18 @@ namespace Surfer {
             if (key == VK_DOWN) return KeyCode::ArrowDown;
             if (key == VK_LEFT) return KeyCode::ArrowLeft;
             if (key == VK_RIGHT) return KeyCode::ArrowRight;
+
+            // Spacebar
+            if (key == VK_SPACE) return KeyCode::Space;
+
+            // Shift (either left or right)
+            if (key == VK_SHIFT) {
+                if (key == VK_LSHIFT)
+                    return KeyCode::LeftShift;
+                if (key == VK_RSHIFT)
+                    return KeyCode::RightShift;
+                return KeyCode::LeftShift;
+            }
 
 
             return KeyCode::UnsupportedKey;

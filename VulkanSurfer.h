@@ -1,35 +1,54 @@
-/**
- * Copyright(C) by Matěj Eliáš - matejelias.cz
- *
- * This code is licensed under the MIT license(MIT) (http://opensource.org/licenses/MIT)
- */
+/// Copyright(C) by Matěj Eliáš - matejelias.cz
+/// This code is licensed under the MIT license(MIT) (http://opensource.org/licenses/MIT)
 
 #ifndef VULKANSURFER_H
 #define VULKANSURFER_H
 
+#include <cstdint>
 #include <functional>
 #include <string>
-#include <vector>
 #include <stdexcept>
-#if defined(SURFER_PLATFORM_WIN32)
-#include "windows.h"
-#include <windowsx.h>
+
+// Auto-detect platform if not already defined
+#if !defined(SURFER_PLATFORM_WIN32) && !defined(SURFER_PLATFORM_X11)
+#if defined(_WIN32) || defined(_WIN64)
+#define SURFER_PLATFORM_WIN32
+#elif defined(__linux__)
+        #define SURFER_PLATFORM_X11
+#elif defined(__APPLE__)
+        #define SURFER_PLATFORM_METAL
 #endif
-#if defined(SURFER_PLATFORM_X11)
-#include <X11/Xlib.h>
-#include <X11/Xatom.h>
-#include <X11/XKBlib.h>
-#include <X11/Xutil.h>
 #endif
 
-#include <vulkan/vulkan.h>
+// Define Vulkan platform macros before including Vulkan
 #if defined(SURFER_PLATFORM_WIN32)
+#ifndef VK_USE_PLATFORM_WIN32_KHR
+#define VK_USE_PLATFORM_WIN32_KHR
+#endif
+#elif defined(SURFER_PLATFORM_X11)
+#ifndef VK_USE_PLATFORM_XLIB_KHR
+        #define VK_USE_PLATFORM_XLIB_KHR
+#endif
+#endif
+
+// Include Vulkan headers
+#include <vulkan/vulkan.h>
+
+
+// Platform-specific includes
+#if defined(SURFER_PLATFORM_WIN32)
+#include <windows.h>
+#include <windowsx.h>
 #include <vulkan/vulkan_win32.h>
 #endif
-#if defined(SURFER_PLATFORM_X11)
-#include <vulkan/vulkan_xlib.h>
-#endif
 
+#if defined(SURFER_PLATFORM_X11)
+    #include <X11/Xlib.h>
+    #include <X11/Xatom.h>
+    #include <X11/XKBlib.h>
+    #include <X11/Xutil.h>
+    #include <vulkan/vulkan_xlib.h>
+#endif
 
 namespace Surfer {
     enum class KeyCode {
@@ -106,16 +125,15 @@ namespace Surfer {
         /**
          *  Creates and opens a window
          * @param title Title of the windows that will be displayed in the title bar
-         * @param instance VkInstance
          * @param width Horizontal resolution of the window in pixels
          * @param height Vertical resolution of the window in pixels
          * @param x Horizontal position of the windows on the screen
          * @param y Vertical position of the window on the screen
          * @return Window pointer
          */
-        static Window *createWindow(const std::string &title, const VkInstance instance, const uint32_t width,
+        static Window *createWindow(const std::string &title, const uint32_t width,
                                     const uint32_t height, const int32_t x, const int32_t y) {
-            return new Window(title, instance, width, height, x, y);
+            return new Window(title, width, height, x, y);
         }
 
         /**
@@ -143,11 +161,6 @@ namespace Surfer {
          */
         bool shouldClose() const { return _shouldClose; }
 
-        /**
-         * Returns Vulkan surface
-         * @return VkSurfaceKHR Vulkan surface
-         */
-        VkSurfaceKHR getSurface() const { return _surface; }
 
         /**
          * Function returns cursors position in window relative to top left corner
@@ -233,18 +246,22 @@ namespace Surfer {
             this->_nativeKeyReleaseCallback = callback;
         }
 
-    protected:
-        Window(const std::string &title, VkInstance instance, const uint32_t width, const uint32_t height,
-               const int32_t x, const int32_t y): _instance(instance) {
-            if (instance == VK_NULL_HANDLE) {
-                throw std::runtime_error("VulkanSurfer: instance is null");;
-            }
+        VkResult createSurface(VkInstance instance, VkSurfaceKHR *surface) {
+#if defined(SURFER_PLATFORM_WIN32)
+            return Win32_CreateSurface(instance, surface);
+#elif defined(SURFER_PLATFORM_X11)
+            return X11_CreateSurface(isntance, surface);
+#endif
+        }
 
+    protected:
+        Window(const std::string &title, const uint32_t width, const uint32_t height,
+               const int32_t x, const int32_t y) {
             if (width == 0 || height == 0) {
                 throw std::runtime_error("VulkanSurfer: width == 0 || height == 0");;
             }
 #if defined(SURFER_PLATFORM_WIN32)
-            Win32_createWindow(title, instance, width, height, x, y);
+            Win32_createWindow(title, width, height, x, y);
 #elif defined(SURFER_PLATFORM_X11)
             X11_createWindow(title, instance, width, height, x, y);
 #endif
@@ -258,9 +275,6 @@ namespace Surfer {
 #endif
         }
 
-        // Vulkan
-        VkSurfaceKHR _surface;
-        VkInstance _instance;
 
         // State
         bool _shouldClose = false;
@@ -285,11 +299,12 @@ namespace Surfer {
 
 #if defined(SURFER_PLATFORM_WIN32)
         HWND Win32_hWnd;
+        HINSTANCE Win32_hInstance;
         MSG Win32_msg{};
         bool Win32_resizing = false;
 
 
-        void Win32_createWindow(const std::string &title, VkInstance instance, const uint32_t width,
+        void Win32_createWindow(const std::string &title, const uint32_t width,
                                 const uint32_t height, const int32_t x, const int32_t y) {
             _width = width;
             _height = height;
@@ -299,11 +314,13 @@ namespace Surfer {
 
             SetProcessDPIAware();
 
+            Win32_hInstance = GetModuleHandle(nullptr);
+
             WNDCLASSEX wc = {};
             wc.cbSize = sizeof(WNDCLASSEX);
             wc.style = CS_HREDRAW | CS_VREDRAW;
             wc.lpfnWndProc = this->WndProc;
-            wc.hInstance = GetModuleHandle(nullptr);
+            wc.hInstance = Win32_hInstance;
             wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
             wc.lpszClassName = title.c_str();
 
@@ -336,21 +353,9 @@ namespace Surfer {
             SetWindowLongPtr(Win32_hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
             ShowWindow(Win32_hWnd, SW_SHOW);
             UpdateWindow(Win32_hWnd);
-
-            VkWin32SurfaceCreateInfoKHR surfaceCreateInfo = {};
-            surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-            surfaceCreateInfo.hwnd = Win32_hWnd;
-            surfaceCreateInfo.hinstance = wc.hInstance;
-
-            if (vkCreateWin32SurfaceKHR(instance, &surfaceCreateInfo, nullptr, &_surface) != VK_SUCCESS) {
-                throw std::runtime_error("VulkanSurfer: Failed to create Vulkan surface");
-            }
         }
 
         void Win32_destroyWindow() {
-            vkDestroySurfaceKHR(_instance, _surface, nullptr);
-            _surface = VK_NULL_HANDLE;
-
             MSG msg;
             while (PeekMessage(&msg, Win32_hWnd, 0, 0, PM_REMOVE)) {
                 TranslateMessage(&msg);
@@ -372,6 +377,15 @@ namespace Surfer {
             if (GetClassInfoEx(GetModuleHandle(nullptr), _title.c_str(), &wc)) {
                 UnregisterClass(_title.c_str(), GetModuleHandle(nullptr));
             }
+        }
+
+        VkResult Win32_CreateSurface(VkInstance instance, VkSurfaceKHR *surface) const {
+            VkWin32SurfaceCreateInfoKHR surfaceCreateInfo = {};
+            surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+            surfaceCreateInfo.hwnd = Win32_hWnd;
+            surfaceCreateInfo.hinstance = Win32_hInstance;
+
+            return vkCreateWin32SurfaceKHR(instance, &surfaceCreateInfo, nullptr, surface);
         }
 
         void Win32_pollEvents() {
@@ -751,24 +765,9 @@ namespace Surfer {
             Atom XdndAware = XInternAtom(X11_display, "XdndAware", False);
             XChangeProperty(X11_display, X11_window, XdndAware, XA_ATOM, 32, PropModeReplace,
                             (unsigned char *) &XdndAware, 1);
-
-            VkXlibSurfaceCreateInfoKHR surfaceInfo = {};
-            surfaceInfo.sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
-            surfaceInfo.dpy = X11_display;
-            surfaceInfo.window = X11_window;
-
-            VkResult result = vkCreateXlibSurfaceKHR(instance, &surfaceInfo, nullptr, &_surface);
-            if (result != VK_SUCCESS) {
-                throw std::runtime_error("VulkanSurfer: Failed to create Xlib surface");
-            }
-
-            this->_instance = instance;
         }
 
         void X11_destroyWindow() {
-            vkDestroySurfaceKHR(_instance, _surface, nullptr);
-            _surface = VK_NULL_HANDLE;
-
             if (X11_window) {
                 XDestroyWindow(X11_display, X11_window);
                 X11_window = 0;
@@ -778,6 +777,15 @@ namespace Surfer {
                 XCloseDisplay(X11_display);
                 X11_display = nullptr;
             }
+        }
+
+        VkResult X11_CreateSurface(VkInstance instance, VkSurfaceKHR *surface) {
+            VkXlibSurfaceCreateInfoKHR surfaceInfo = {};
+            surfaceInfo.sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
+            surfaceInfo.dpy = X11_display;
+            surfaceInfo.window = X11_window;
+
+            return vkCreateXlibSurfaceKHR(instance, &surfaceInfo, nullptr, surface);
         }
 
         void X11_pollEvents() {

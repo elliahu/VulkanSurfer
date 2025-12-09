@@ -1,30 +1,25 @@
 cmake_minimum_required(VERSION 3.29)
-project(VulkanSurfer)
+project(VulkanSurferRoot VERSION 1.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 11)
 
-add_executable(VulkanSurfer example/main.cpp
-        VulkanSurfer.h)
+# Find Vulkan
+find_package(Vulkan REQUIRED)
 
-target_include_directories(VulkanSurfer PRIVATE ${CMAKE_SOURCE_DIR})
+# Make the header-only library available
+add_library(VulkanSurfer INTERFACE)
 
+target_include_directories(VulkanSurfer INTERFACE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+# Link Vulkan (provides include directories and libraries)
+target_link_libraries(VulkanSurfer INTERFACE Vulkan::Vulkan)
+
+# Platform-specific libraries (but don't define platform macros - header does that)
 if(WIN32)
-    target_compile_definitions(VulkanSurfer PRIVATE VK_USE_PLATFORM_WIN32_KHR)
-    target_link_libraries(VulkanSurfer PRIVATE Dwmapi)
-
+    target_link_libraries(VulkanSurfer INTERFACE Dwmapi)
 elseif(UNIX AND NOT APPLE)
-    target_compile_definitions(VulkanSurfer PRIVATE VK_USE_PLATFORM_XLIB_KHR)
-
-    # Find and link X11 libraries
     find_package(X11 REQUIRED)
-    target_include_directories(VulkanSurfer PRIVATE ${X11_INCLUDE_DIR})
-    target_link_libraries(VulkanSurfer PRIVATE ${X11_LIBRARIES})
-    target_link_libraries(VulkanSurfer PRIVATE ${X11_LIBRARIES} X11::Xkb)
-
-elseif(APPLE)
-    target_compile_definitions(VulkanSurfer PRIVATE VK_USE_PLATFORM_METAL_EXT)
+    target_link_libraries(VulkanSurfer INTERFACE ${X11_LIBRARIES})
 endif()
-
-# Link dependencies
-find_package(Vulkan REQUIRED )
-target_link_libraries(VulkanSurfer PUBLIC Vulkan::Vulkan)

@@ -5,23 +5,23 @@
  */
 
 
+#include "VulkanSurfer.h" // Includes <vulkan/vulkan.h> inside
 #include <iostream>
-#include <memory>
 
+// Do not forget to define your platform
+// Here we do it autmatically
 #ifdef _WIN32
-#define SURFER_PLATFORM_WIN32
+#define SURFER_PLATFORM_WIN32 // On windows define this
 #endif
+
 
 #ifdef __linux__
-#define SURFER_PLATFORM_X11
+#define SURFER_PLATFORM_X11 // On linux define this
 #endif
 
-#include "VulkanSurfer.h"
 
-int main() {
-
-    // Create vulkan instance
-    // Your code probably already does this
+// Create a vulkan instance, your code probably already does that
+VkResult createVulkanInstance(VkInstance *instance) {
     VkApplicationInfo appInfo = {};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     appInfo.pApplicationName = "Vulkan Application";
@@ -53,40 +53,56 @@ int main() {
     createInfo.enabledLayerCount = sizeof(validationLayers) / sizeof(validationLayers[0]);
     createInfo.ppEnabledLayerNames = validationLayers;
 
-    VkInstance instance;
-    VkResult result = vkCreateInstance(&createInfo, nullptr, &instance);
-    if (result != VK_SUCCESS) {
-        std::cerr << "Failed to create Vulkan instance!" << std::endl;
-        return -1;
+    return vkCreateInstance(&createInfo, nullptr, instance);
+}
+
+int main() {
+
+    // Create Vulkan instance (your probably already does that)
+    VkInstance instance = VK_NULL_HANDLE;
+    if (createVulkanInstance(&instance) != VK_SUCCESS) {
+        std::cout << "Failed to create Vulkan instance" << std::endl;
+        return EXIT_FAILURE;
     }
 
-    // We need a vulkan instance to create a Surfer::Window instance
-    Surfer::Window * window = Surfer::Window::createWindow("Example window", instance, 800, 600 , 100, 100 );
+    // Create window
+    auto window = Surfer::Window::createWindow("Example window", 800, 600 , 100, 100 );
 
-    // Now we can ga a surface to draw onto
-    VkSurfaceKHR surface = window->getSurface();
+    // Now we can create a Vulkan surface
+    VkSurfaceKHR surface = VK_NULL_HANDLE;
+    if (window->createSurface(instance, &surface) != VK_SUCCESS) {
+        std::cout << "Failed to create Vulkan surface" << std::endl;
+        return EXIT_FAILURE;
+    }
 
     // Register callbacks
+
+    // Key is presses
     window->registerKeyPressCallback([](Surfer::KeyCode key) {
         std::cout << "Key pressed " << static_cast<unsigned int>(key) << std::endl;
     });
 
+    // Key is releases
     window->registerKeyReleaseCallback([](Surfer::KeyCode key) {
         std::cout << "Key released "  << static_cast<unsigned int>(key) << std::endl;
     });
 
+    // For your ui
     window->registerMouseMotionCallback([](unsigned int x, unsigned int y) {
         std::cout << "Mouse moved in window: " << x << " x " << y << std::endl;
     });
 
+    // Hre you would typically recreate swapchain and dependent resources
     window->registerResizeCallback([](unsigned int width, unsigned int height) {
         std::cout << "Window resized: " << width << " x " << height << std::endl;
     });
 
+    // This is called when window is moved
     window->registerMoveCallback([](int x, int y) {
         std::cout << "Window moved: " << x << " x " << y << std::endl;
     });
 
+    // Here you would typically release your resources
     window->registerCloseCallback([]() {
         std::cout << "Closing..." << std::endl;
     });
@@ -100,6 +116,8 @@ int main() {
         if (focused) {std::cout << "Window is in focus." << std::endl;}
         else {std::cout << "Window is out of focus." << std::endl;}
     });
+
+    // You can use these methods to add support any key as long as your os detects it!
 
 #ifdef SURFER_PLATFORM_X11
     window->registerNativeKeyPressCallback([](KeySym sym) {
@@ -118,19 +136,23 @@ int main() {
 
     // Window loop
     while (!window->shouldClose()) {
-        // poll for events
+        // Process OS events
         window->pollEvents();
 
-        // cursor position can be retrieved like this as well as using the callback
+        // Query state after events processed
         unsigned int x,y;
         window->getCursorPosition(x,y);
 
         // Draw
+        // Your drawing here
     }
 
     // Don't forget to destroy the window
     Surfer::Window::destroyWindow(window);
 
     // cleanup of Vulkan resource
+    vkDestroySurfaceKHR(instance,surface,nullptr);
     vkDestroyInstance(instance, nullptr);
+
+    return EXIT_SUCCESS;
 }

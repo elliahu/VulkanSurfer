@@ -14,9 +14,9 @@
 #if defined(_WIN32) || defined(_WIN64)
 #define SURFER_PLATFORM_WIN32
 #elif defined(__linux__)
-        #define SURFER_PLATFORM_X11
+#define SURFER_PLATFORM_X11
 #elif defined(__APPLE__)
-        #define SURFER_PLATFORM_METAL
+#define SURFER_PLATFORM_METAL
 #endif
 #endif
 
@@ -27,7 +27,7 @@
 #endif
 #elif defined(SURFER_PLATFORM_X11)
 #ifndef VK_USE_PLATFORM_XLIB_KHR
-        #define VK_USE_PLATFORM_XLIB_KHR
+#define VK_USE_PLATFORM_XLIB_KHR
 #endif
 #endif
 
@@ -43,11 +43,11 @@
 #endif
 
 #if defined(SURFER_PLATFORM_X11)
-    #include <X11/Xlib.h>
-    #include <X11/Xatom.h>
-    #include <X11/XKBlib.h>
-    #include <X11/Xutil.h>
-    #include <vulkan/vulkan_xlib.h>
+#include <X11/Xlib.h>
+#include <X11/Xatom.h>
+#include <X11/XKBlib.h>
+#include <X11/Xutil.h>
+#include <vulkan/vulkan_xlib.h>
 #endif
 
 namespace Surfer {
@@ -172,10 +172,30 @@ namespace Surfer {
             y = _mouse_y;
         }
 
+        /**
+         * @brief Function retrieves window position on screen
+         * @param x Horizontal position
+         * @param y Vertical position
+         */
+        void getWindowPosition(unsigned int &x, unsigned int &y) const {
+            x = _x;
+            y = _y;
+        }
+
+        /**
+         * @brief Function retrieves window size (resolution)
+         * @param width Horizontal resolution in pixels
+         * @param height Vertical resolution in pixels
+         */
+        void getWindowSize(unsigned int &width, unsigned int &height) const {
+            width = _width;
+            height = _height;
+        }
+
 #if defined(SURFER_PLATFORM_WIN32)
         HWND getNativeWindowPtr() const { return Win32_hWnd; }
 #elif defined(SURFER_PLATFORM_X11)
-        ::Window  getNativeWindowPtr() const {return X11_window;}
+        ::Window getNativeWindowPtr() const { return X11_window; }
 #endif
 
         /**
@@ -278,11 +298,11 @@ namespace Surfer {
 
         // State
         bool _shouldClose = false;
-        uint32_t _width, _height;
-        int32_t _x, _y;
-        uint32_t _mouse_x, _mouse_y;
-        bool _focused, _mouseEntered;
-        std::string _title;
+        uint32_t _width = 0u, _height = 0u;
+        int32_t _x = 0, _y = 0;
+        uint32_t _mouse_x = 0u, _mouse_y = 0u;
+        bool _focused = false, _mouseEntered = false;
+        std::string _title{};
 
         // Callbacks
         KeyPressCallback _keyPressCallback = nullptr;
@@ -329,7 +349,7 @@ namespace Surfer {
             }
 
             // Calculate window rect to account for borders and title bar
-            RECT windowRect = {0, 0, width, height};
+            RECT windowRect = {0, 0, static_cast<LONG>(width), static_cast<LONG>(height)};
             AdjustWindowRectEx(&windowRect, WS_OVERLAPPEDWINDOW, FALSE, 0);
             int adjustedWidth = windowRect.right - windowRect.left;
             int adjustedHeight = windowRect.bottom - windowRect.top;
@@ -690,36 +710,112 @@ namespace Surfer {
         }
 
         KeyCode Win32_translateKeyCode(WPARAM key) {
-            // A - Z
+            // Contiguous Ranges (Alphabet, Numbers, F-Keys, Numpad 0-9)
+
+            // Alphabet (A - Z)
             if (key >= 0x41 && key <= 0x5A) {
                 return static_cast<KeyCode>(static_cast<uint32_t>(KeyCode::KeyA) + (key - 0x41));
             }
 
-            // Numpad 0-9
+            // Numbers (0 - 9)
+            if (key >= 0x30 && key <= 0x39) {
+                return static_cast<KeyCode>(static_cast<uint32_t>(KeyCode::Num0) + (key - 0x30));
+            }
+
+            // Numpad (0 - 9)
             if (key >= VK_NUMPAD0 && key <= VK_NUMPAD9) {
                 return static_cast<KeyCode>(static_cast<uint32_t>(KeyCode::Numpad0) + (key - VK_NUMPAD0));
             }
 
-            // Arrows
-            if (key == VK_UP) return KeyCode::ArrowUp;
-            if (key == VK_DOWN) return KeyCode::ArrowDown;
-            if (key == VK_LEFT) return KeyCode::ArrowLeft;
-            if (key == VK_RIGHT) return KeyCode::ArrowRight;
-
-            // Spacebar
-            if (key == VK_SPACE) return KeyCode::Space;
-
-            // Shift (either left or right)
-            if (key == VK_SHIFT) {
-                if (key == VK_LSHIFT)
-                    return KeyCode::LeftShift;
-                if (key == VK_RSHIFT)
-                    return KeyCode::RightShift;
-                return KeyCode::LeftShift;
+            // Function Keys (F1 - F12)
+            if (key >= VK_F1 && key <= VK_F12) {
+                return static_cast<KeyCode>(static_cast<uint32_t>(KeyCode::F1) + (key - VK_F1));
             }
 
+            // Specific Keys
+            switch (key) {
+                // Arrows
+                case VK_UP: return KeyCode::ArrowUp;
+                case VK_DOWN: return KeyCode::ArrowDown;
+                case VK_LEFT: return KeyCode::ArrowLeft;
+                case VK_RIGHT: return KeyCode::ArrowRight;
 
-            return KeyCode::UnsupportedKey;
+                // Navigation
+                case VK_HOME: return KeyCode::Home;
+                case VK_END: return KeyCode::End;
+                case VK_PRIOR: return KeyCode::PageUp;
+                case VK_NEXT: return KeyCode::PageDown;
+
+                // Editing
+                case VK_BACK: return KeyCode::BackSpace;
+                case VK_DELETE: return KeyCode::Delete;
+                case VK_INSERT: return KeyCode::Insert;
+
+                // Special
+                case VK_ESCAPE: return KeyCode::Esc;
+                case VK_SPACE: return KeyCode::Space;
+                case VK_TAB: return KeyCode::Tab;
+                case VK_RETURN: return KeyCode::Enter; // NumpadEnter requires checking LPARAM (Extended Bit)
+                case VK_SNAPSHOT: return KeyCode::PrtSc;
+                case VK_PAUSE: return KeyCode::Pause;
+
+                // Numpad Math
+                case VK_MULTIPLY: return KeyCode::NumpadMultiply;
+                case VK_ADD: return KeyCode::NumpadAdd;
+                case VK_SUBTRACT: return KeyCode::NumpadSubtract;
+                case VK_DECIMAL: return KeyCode::NumpadDecimal;
+                case VK_DIVIDE: return KeyCode::NumpadDivide;
+
+                // Symbols (US Keyboard Layout Mappings)
+                case VK_OEM_PLUS: return KeyCode::Equal; // Shift + '=' is '+'
+                case VK_OEM_MINUS: return KeyCode::Minus;
+                case VK_OEM_COMMA: return KeyCode::Comma;
+                case VK_OEM_PERIOD: return KeyCode::Period;
+                case VK_OEM_1: return KeyCode::Semicolon; // ;:
+                case VK_OEM_2: return KeyCode::Slash; // /?
+                case VK_OEM_3: return KeyCode::Grave; // `~
+                case VK_OEM_4: return KeyCode::BracketLeft; // [{
+                case VK_OEM_5: return KeyCode::Backslash; // \|
+                case VK_OEM_6: return KeyCode::BracketRight; // ]}
+                case VK_OEM_7: return KeyCode::Apostrophe; // '"
+
+                // Locks
+                case VK_CAPITAL: return KeyCode::CapsLock;
+                case VK_NUMLOCK: return KeyCode::NumLock;
+                case VK_SCROLL: return KeyCode::ScrollLock;
+
+                // Modifiers
+                // Note: WM_KEYDOWN usually sends generic VK_SHIFT/CONTROL/MENU.
+                // We check GetKeyState to distinguish Left vs Right.
+
+                case VK_SHIFT:
+                    if (GetKeyState(VK_LSHIFT) & 0x8000) return KeyCode::LeftShift;
+                    if (GetKeyState(VK_RSHIFT) & 0x8000) return KeyCode::RightShift;
+                    return KeyCode::LeftShift; // Fallback
+
+                case VK_CONTROL:
+                    if (GetKeyState(VK_LCONTROL) & 0x8000) return KeyCode::LeftControl;
+                    if (GetKeyState(VK_RCONTROL) & 0x8000) return KeyCode::RightControl;
+                    return KeyCode::LeftControl;
+
+                case VK_MENU: // Alt Key
+                    if (GetKeyState(VK_LMENU) & 0x8000) return KeyCode::LeftAlt;
+                    if (GetKeyState(VK_RMENU) & 0x8000) return KeyCode::RightAlt;
+                    return KeyCode::LeftAlt;
+
+                case VK_LWIN: return KeyCode::SuperLeft;
+                case VK_RWIN: return KeyCode::SuperRight;
+
+                // Direct mappings if Windows sends specific VKs
+                case VK_LSHIFT: return KeyCode::LeftShift;
+                case VK_RSHIFT: return KeyCode::RightShift;
+                case VK_LCONTROL: return KeyCode::LeftControl;
+                case VK_RCONTROL: return KeyCode::RightControl;
+                case VK_LMENU: return KeyCode::LeftAlt;
+                case VK_RMENU: return KeyCode::RightAlt;
+
+                default: return KeyCode::UnsupportedKey;
+            }
         }
 
 
@@ -1037,144 +1133,172 @@ namespace Surfer {
             }
         }
 
-        // Map raw X11 keycodes to KeyCode
-        KeyCode X11_translateKeyCode(KeySym keySym, unsigned int modifiers = 0) {
+        KeyCode X11_translateKeyCode(KeySym keySym) {
+            // Contiguous Ranges
 
-            // a-z
+            // Alphabet (a-z, A-Z)
             if (keySym >= XK_a && keySym <= XK_z) {
                 return static_cast<KeyCode>(static_cast<uint32_t>(KeyCode::KeyA) + (keySym - XK_a));
             }
-
-            // A-Z
             if (keySym >= XK_A && keySym <= XK_Z) {
                 return static_cast<KeyCode>(static_cast<uint32_t>(KeyCode::KeyA) + (keySym - XK_A));
             }
 
-            // 0-9
+            // Numbers (0-9)
             if (keySym >= XK_0 && keySym <= XK_9) {
                 return static_cast<KeyCode>(static_cast<uint32_t>(KeyCode::Num0) + (keySym - XK_0));
             }
 
-            if (keySym == XK_plus) {return KeyCode::Num1;}
-            if (keySym == XK_ecaron) {return KeyCode::Num2;}
-            if (keySym == XK_scaron) {return KeyCode::Num3;}
-            if (keySym == XK_ccaron) {return KeyCode::Num4;}
-            if (keySym == XK_rcaron) {return KeyCode::Num5;}
-            if (keySym == XK_zcaron) {return KeyCode::Num6;}
-            if (keySym == XK_yacute) {return KeyCode::Num7;}
-            if (keySym == XK_aacute) {return KeyCode::Num8;}
-            if (keySym == XK_iacute) {return KeyCode::Num9;}
-            if (keySym == XK_eacute) {return KeyCode::Num0;}
-
-            // Numpad numbers
+            // Numpad Numbers (0-9)
             if (keySym >= XK_KP_0 && keySym <= XK_KP_9) {
                 return static_cast<KeyCode>(static_cast<uint32_t>(KeyCode::Numpad0) + (keySym - XK_KP_0));
             }
 
-            if (keySym == XK_KP_Insert) {return KeyCode::Numpad0;}
-            if (keySym == XK_KP_Delete) {return KeyCode::NumpadDecimal;}
-            if (keySym == XK_KP_End) {return KeyCode::Numpad1;}
-            if (keySym == XK_KP_Down) {return KeyCode::Numpad2;}
-            if (keySym == XK_KP_Page_Down) {return KeyCode::Numpad3;}
-            if (keySym == XK_KP_Left) {return KeyCode::Numpad4;}
-            if (keySym == XK_KP_Begin) {return KeyCode::Numpad5;}
-            if (keySym == XK_KP_Right) {return KeyCode::Numpad6;}
-            if (keySym == XK_KP_Home) {return KeyCode::Numpad7;}
-            if (keySym == XK_KP_Up) {return KeyCode::Numpad8;}
-            if (keySym == XK_KP_Page_Up) {return KeyCode::Numpad9;}
-
-            // numpad non-number buttons
-            if (keySym == XK_KP_Add) {return KeyCode::NumpadAdd;}
-            if (keySym == XK_KP_Subtract) {return KeyCode::NumpadSubtract;}
-            if (keySym == XK_KP_Divide) {return KeyCode::NumpadDivide;}
-            if (keySym == XK_KP_Multiply) {return KeyCode::NumpadMultiply;}
-            if (keySym == XK_KP_Decimal) {return KeyCode::NumpadDecimal;}
-            if (keySym == XK_KP_Enter) {return KeyCode::NumpadEnter;}
-            if (keySym == XK_KP_Equal) {return KeyCode::NumpadEqual;}
-
-            // function keys
-            if (keySym >= XK_F1 && keySym <= XK_F11) {
+            // Function Keys (F1 - F12)
+            // Note: XK_F1 to XK_F12 are contiguous in X11 (0xFFBE to 0xFFC9)
+            if (keySym >= XK_F1 && keySym <= XK_F12) {
                 return static_cast<KeyCode>(static_cast<uint32_t>(KeyCode::F1) + (keySym - XK_F1));
             }
-            if (keySym == XK_F12) {return KeyCode::F12;} // F12 is not right after F11 in XK for some reason ??
 
-            // Modifiers
-            if (keySym == XK_Shift_L) {return KeyCode::LeftShift;}
-            if (keySym == XK_Shift_R) {return KeyCode::RightShift;}
-            if (keySym == XK_Control_L) {return KeyCode::LeftControl;}
-            if (keySym == XK_Control_R) {return KeyCode::RightControl;}
-            if (keySym == XK_Alt_L) {return KeyCode::LeftAlt;}
-            if (keySym == XK_Alt_R) {return KeyCode::RightAlt;}
-            if (keySym == XK_ISO_Level3_Shift) {return KeyCode::RightAlt;} // why ?
-            if (keySym == XK_Super_L) {return KeyCode::SuperLeft;}
-            if (keySym == XK_Super_R) {return KeyCode::SuperRight;}
-            if (keySym == XK_Caps_Lock) {return KeyCode::CapsLock;}
-            if (keySym == XK_Num_Lock) {return KeyCode::NumLock;}
-            if (keySym == XK_Scroll_Lock) {return KeyCode::ScrollLock;}
+            // Specific Key Mappings
+            switch (keySym) {
+                // Arrows
+                case XK_Up: return KeyCode::ArrowUp;
+                case XK_Down: return KeyCode::ArrowDown;
+                case XK_Left: return KeyCode::ArrowLeft;
+                case XK_Right: return KeyCode::ArrowRight;
 
-            // arrows
-            if (keySym == XK_Up) {return KeyCode::ArrowUp;}
-            if (keySym == XK_Down) {return KeyCode::ArrowDown;}
-            if (keySym == XK_Left) {return KeyCode::ArrowLeft;}
-            if (keySym == XK_Right) {return KeyCode::ArrowRight;}
+                // Navigation
+                case XK_Home: return KeyCode::Home;
+                case XK_End: return KeyCode::End;
+                case XK_Page_Up: return KeyCode::PageUp;
+                case XK_Page_Down: return KeyCode::PageDown;
 
-            // navigation
-            if (keySym == XK_Home) {return KeyCode::Home;}
-            if (keySym == XK_End) {return KeyCode::End;}
-            if (keySym == XK_Page_Up) {return KeyCode::PageUp;}
-            if (keySym == XK_Page_Down) {return KeyCode::PageDown;}
+                // Editing
+                case XK_BackSpace: return KeyCode::BackSpace;
+                case XK_Delete: return KeyCode::Delete;
+                case XK_Insert: return KeyCode::Insert;
 
-            // editing
-            if (keySym == XK_BackSpace) {return KeyCode::BackSpace;}
-            if (keySym == XK_Delete) {return KeyCode::Delete;}
-            if (keySym == XK_Insert) {return KeyCode::Insert;}
+                // Special
+                case XK_Return: return KeyCode::Enter;
+                case XK_space: return KeyCode::Space;
+                case XK_Tab: return KeyCode::Tab;
+                case XK_Escape: return KeyCode::Esc;
+                case XK_Print: return KeyCode::PrtSc;
+                case XK_Pause: return KeyCode::Pause;
+                case XK_Break: return KeyCode::Pause;
 
-            // Special
-            if (keySym == XK_Return) {return KeyCode::Enter;}
-            if (keySym == XK_space) {return KeyCode::Space;}
-            if (keySym == XK_Tab) {return KeyCode::Tab;}
-            if (keySym == XK_Escape) {return KeyCode::Esc;}
-            if (keySym == XK_Print) {return KeyCode::PrtSc;}
-            if (keySym == XK_Pause) {return KeyCode::Pause;}
+                // Modifiers
+                case XK_Shift_L: return KeyCode::LeftShift;
+                case XK_Shift_R: return KeyCode::RightShift;
+                case XK_Control_L: return KeyCode::LeftControl;
+                case XK_Control_R: return KeyCode::RightControl;
+                case XK_Alt_L: return KeyCode::LeftAlt;
+                case XK_Alt_R: return KeyCode::RightAlt;
+                case XK_Super_L: return KeyCode::SuperLeft;
+                case XK_Super_R: return KeyCode::SuperRight;
+                case XK_Caps_Lock: return KeyCode::CapsLock;
+                case XK_Num_Lock: return KeyCode::NumLock;
+                case XK_Scroll_Lock: return KeyCode::ScrollLock;
+                case XK_ISO_Level3_Shift: return KeyCode::RightAlt; // AltGr
 
-            // Symbols
-            if (keySym == XK_uring) {return KeyCode::Semicolon;}
-            if (keySym == XK_semicolon) {return KeyCode::Semicolon;}
+                // Numpad (Non-Digits)
+                case XK_KP_Enter: return KeyCode::NumpadEnter;
+                case XK_KP_Multiply: return KeyCode::NumpadMultiply;
+                case XK_KP_Add: return KeyCode::NumpadAdd;
+                case XK_KP_Subtract: return KeyCode::NumpadSubtract;
+                case XK_KP_Decimal: return KeyCode::NumpadDecimal;
+                case XK_KP_Divide: return KeyCode::NumpadDivide;
+                case XK_KP_Equal: return KeyCode::NumpadEqual;
 
-            if (keySym == XK_equal) {return KeyCode::Equal;}
-            if (keySym == XK_dead_acute) {return KeyCode::Equal;}
+                // Numpad Navigation (When NumLock is off)
+                case XK_KP_Insert: return KeyCode::Numpad0;
+                case XK_KP_End: return KeyCode::Numpad1;
+                case XK_KP_Down: return KeyCode::Numpad2;
+                case XK_KP_Page_Down: return KeyCode::Numpad3;
+                case XK_KP_Left: return KeyCode::Numpad4;
+                case XK_KP_Begin: return KeyCode::Numpad5;
+                case XK_KP_Right: return KeyCode::Numpad6;
+                case XK_KP_Home: return KeyCode::Numpad7;
+                case XK_KP_Up: return KeyCode::Numpad8;
+                case XK_KP_Page_Up: return KeyCode::Numpad9;
+                case XK_KP_Delete: return KeyCode::NumpadDecimal;
 
-            if (keySym == XK_parenleft) {return KeyCode::BracketLeft;}
-            if (keySym == XK_braceleft) {return KeyCode::BracketLeft;}
-            if (keySym == XK_uacute) {return KeyCode::BracketLeft;}
+                // Symbols (Standard US Layout & Shifted Variants)
 
+                // Key: ` ~
+                case XK_grave: return KeyCode::Grave;
+                case XK_asciitilde: return KeyCode::Grave;
 
-            if (keySym == XK_braceright) {return KeyCode::BracketRight;}
-            if (keySym == XK_parenright) {return KeyCode::BracketRight;}
+                // Key: - _
+                case XK_minus: return KeyCode::Minus;
+                case XK_underscore: return KeyCode::Minus;
 
+                // Key: = +
+                case XK_equal: return KeyCode::Equal;
+                case XK_plus: return KeyCode::Equal;
 
-            if (keySym == XK_quotedbl) {return KeyCode::Apostrophe;}
-            if (keySym == XK_apostrophe) {return KeyCode::Apostrophe;}
-            if (keySym == XK_section) {return KeyCode::Apostrophe;}
+                // Key: [ {
+                case XK_bracketleft: return KeyCode::BracketLeft;
+                case XK_braceleft: return KeyCode::BracketLeft;
 
-            if (keySym == XK_comma) {return KeyCode::Comma;}
-            if (keySym == XK_guillemotleft) {return KeyCode::Comma;}
+                // Key: ] }
+                case XK_bracketright: return KeyCode::BracketRight;
+                case XK_braceright: return KeyCode::BracketRight;
 
-            if (keySym == XK_period) {return KeyCode::Period;}
-            if (keySym == XK_guillemotright) {return KeyCode::Period;}
+                // Key: ; :
+                case XK_semicolon: return KeyCode::Semicolon;
+                case XK_colon: return KeyCode::Semicolon;
 
+                // Key: ' "
+                case XK_apostrophe: return KeyCode::Apostrophe;
+                case XK_quotedbl: return KeyCode::Apostrophe;
 
-            if (keySym == XK_slash) {return KeyCode::Slash;}
-            if (keySym == XK_minus) {return KeyCode::Slash;}
+                // Key: , <
+                case XK_comma: return KeyCode::Comma;
+                case XK_less: return KeyCode::Comma;
 
-            if (keySym == XK_bar) {return KeyCode::Backslash;}
-            if (keySym == XK_backslash) {return KeyCode::Backslash;}
-            if (keySym == XK_dead_diaeresis) {return KeyCode::Backslash;}
+                // Key: . >
+                case XK_period: return KeyCode::Period;
+                case XK_greater: return KeyCode::Period;
 
-            if (keySym == XK_grave) {return KeyCode::Grave;}
+                // Key: / ?
+                case XK_slash: return KeyCode::Slash;
+                case XK_question: return KeyCode::Slash;
 
+                // Key: \ |
+                case XK_backslash: return KeyCode::Backslash;
+                case XK_bar: return KeyCode::Backslash;
 
-            return KeyCode::UnsupportedKey;
+                // Shifted Numbers (US Layout)
+                case XK_exclam: return KeyCode::Num1;
+                case XK_at: return KeyCode::Num2;
+                case XK_numbersign: return KeyCode::Num3;
+                case XK_dollar: return KeyCode::Num4;
+                case XK_percent: return KeyCode::Num5;
+                case XK_asciicircum: return KeyCode::Num6;
+                case XK_ampersand: return KeyCode::Num7;
+                case XK_asterisk: return KeyCode::Num8;
+                case XK_parenleft: return KeyCode::Num9;
+                case XK_parenright: return KeyCode::Num0;
+
+                // Custom/International Mappings
+                case XK_ecaron: return KeyCode::Num2;
+                case XK_scaron: return KeyCode::Num3;
+                case XK_ccaron: return KeyCode::Num4;
+                case XK_rcaron: return KeyCode::Num5;
+                case XK_zcaron: return KeyCode::Num6;
+                case XK_yacute: return KeyCode::Num7;
+                case XK_aacute: return KeyCode::Num8;
+                case XK_iacute: return KeyCode::Num9;
+                case XK_eacute: return KeyCode::Num0;
+                case XK_dead_acute: return KeyCode::Equal;
+                case XK_dead_diaeresis: return KeyCode::Backslash;
+                case XK_uring: return KeyCode::Semicolon;
+                case XK_section: return KeyCode::Apostrophe;
+
+                default: return KeyCode::UnsupportedKey;
+            }
         }
 
 

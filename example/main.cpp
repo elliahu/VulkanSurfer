@@ -127,7 +127,7 @@ int main() {
 
 #ifdef SURFER_PLATFORM_WIN32
     window->registerNativeKeyPressCallback([](WPARAM sym) {
-        std::cout << "Native key: " << sym << std::endl;
+        //std::cout << "Native key: " << sym << std::endl;
     });
 #endif
 

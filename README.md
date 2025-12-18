@@ -1,18 +1,16 @@
 # VulkanSurfer
-
-***Important note:*** This project is in early stage of development. Only Linux (X11) and Windows (Win32) is supported
-at the moment.
-Key translation from native keycodes is currently in development. Only basic keys (those on a common keyboard) are
-supported as of now.
-Please se support section to see which platforms are supported and Callback-based event handling section to see how to
-handle unsupported keys.
-
 A minimal cross-platform object-oriented c++11 header only window library for Vulkan.
 
-This project aims to make creation of a window with a Vulkan surface and basic event handling as simple and portable as
+This project aims to make creation of a window with a Vulkan surface along with basic i/o handling as simple and portable as
 possible.
-If you just need a window with Vulkan surface and basic event handling, this is the tool you need.
+If you just need a window with Vulkan surface and basic i/o handling, look no further as this is the tool for you.
 Library is header-only single file and there is no need for implementation files. Just drop it into you project.
+
+***Note:*** This project is in early stage of development. Only Linux (X11) and Windows (Win32) is supported
+at the moment.
+Most of the work is currently put into mappings from native key codes to Surfer key codes. Most of the keys on a common
+keyboard are already supported. If you find missing keys, please create an issue where you specify native key code and
+expected Surfer key code.
 
 ## Simple API
 
@@ -34,12 +32,17 @@ while (!window->shouldClose()) {
     // poll for events
     window->pollEvents();
     
+    // You can retrieve somo info without the need for callbacks
+    unsigned int x,y;
+    window->getCursorPosition(x,y);
+    
     // do your rendering
 }
 
 // Don't forget to destroy the window
 Surfer::Window::destroyWindow(window);
-// Destroy other resources as well
+// Destroy other resources as well (like the surface)
+
 ```
 
 See the full [example](https://github.com/elliahu/VulkanSurfer/blob/master/example/main.cpp) in the `example` directory.
@@ -106,9 +109,7 @@ MacOS support is **not** currently planned.
 - Windows
     - [x] **Win32 (Supported)**
     - [ ] *WinnApp (Not supported, planned)*
-- MacOs
-    - [ ] *Metal (Not supported)*
-
+- MacOs (Not supported)
 
 ## Feature support plan
 
@@ -131,28 +132,41 @@ library - simplicity and portability.
 ## Documentation
 
 As this is a one-man project at the moment, I am focusing my efforts on feature implementation and bug fixes.
-Exposed windows methods are well commented. You can always check the source for reference and [example](https://github.com/elliahu/VulkanSurfer/blob/master/example/main.cpp)
+Exposed windows methods are well commented. You can always check the source for reference
+and [example](https://github.com/elliahu/VulkanSurfer/blob/master/example/main.cpp)
 
 ## Installation
+
 There are two installation options based on your preferences and toolchain.
+
 ### 1. Let Surfer load the platform libraries (using CMake)
+
 Copy the repo into your project:
+
 ```bash
 git clone https://github.com/elliahu/VulkanSurfer.git
 ```
+
 Add the repo directory as subdirectory in your CMakeLists.txt:
+
 ```Cmake
 add_subdirectory(VulkanSurfer)
 ```
+
 Don't forget to define your platform before including:
+
 ```c++
 // #define SURFER_PLATFORM_WIN32
 #define SURFER_PLATFORM_X11
 #include "VulkanSurfer.h"
 ```
+
 ### 2. Load the platform libraries yourself
-Just drop the `VulkanSurfer.h` file into your project. Then it is up to you to link required platform libraries to your project (Win32, X11, etc.).
+
+Just drop the `VulkanSurfer.h` file into your project. Then it is up to you to link required platform libraries to your
+project (Win32, X11, etc.).
 Don't forget to define your platform before including:
+
 ```c++
 // #define SURFER_PLATFORM_WIN32
 #define SURFER_PLATFORM_X11

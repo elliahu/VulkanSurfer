@@ -270,7 +270,7 @@ namespace Surfer {
 #if defined(SURFER_PLATFORM_WIN32)
             return Win32_CreateSurface(instance, surface);
 #elif defined(SURFER_PLATFORM_X11)
-            return X11_CreateSurface(isntance, surface);
+            return X11_CreateSurface(instance, surface);
 #endif
         }
 
@@ -283,7 +283,7 @@ namespace Surfer {
 #if defined(SURFER_PLATFORM_WIN32)
             Win32_createWindow(title, width, height, x, y);
 #elif defined(SURFER_PLATFORM_X11)
-            X11_createWindow(title, instance, width, height, x, y);
+            X11_createWindow(title, width, height, x, y);
 #endif
         }
 
@@ -825,7 +825,7 @@ namespace Surfer {
         ::Window X11_root;
         Atom X11_wmDeleteMessage;
 
-        void X11_createWindow(const std::string &title, VkInstance instance, const uint32_t width,
+        void X11_createWindow(const std::string &title, const uint32_t width,
                               const uint32_t height, const int32_t x, const int32_t y) {
             _width = width;
             _height = height;

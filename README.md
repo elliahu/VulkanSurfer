@@ -97,6 +97,13 @@ window->registerNativeKeyPressCallback([](WPARAM sym) {
 });
 ```
 
+## ImGui support (VulkanSurfer ImGui backend)
+[ImGui](https://github.com/ocornut/imgui) became standard go-to UI library in engine programming. 
+To make the ImGui integration into your project that uses VulkanSurfer as easy as possible, 
+VulkanSurfer comes with backend implementation `imgui_impl_vulkansurfer.h`. 
+The VulkanSurfer ImGui backend is used the same way as any other ImGui backend. 
+A tutorial is coming, but for now, you can see the integration in the [hammock] engine [here](https://github.com/elliahu/hammock/blob/modules_port/src/engine/Ui.cpp).
+
 ## Platforms
 
 Currently, VulkanSurfer targets windows using Win32 API and Linux using X11. Other native APIs might be added in the

@@ -199,8 +199,7 @@ inline bool ImGui_ImplVulkanSurfer_Init(Surfer::Window *window) {
     g_VulkanSurferData->DisplaySize = ImVec2(static_cast<float>(width), static_cast<float>(height));
 
     io.BackendPlatformName = "imgui_impl_vulkansurfer_header_only";
-    io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors | ImGuiBackendFlags_HasKeyboard |
-            ImGuiConfigFlags_NavEnableKeyboard;
+    io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors | ImGuiConfigFlags_NavEnableKeyboard;
 
     // Keyboard Callbacks - Queue events instead of directly calling ImGui
     window->registerKeyPressCallback([](Surfer::KeyCode key) {

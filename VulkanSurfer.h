@@ -95,6 +95,7 @@ namespace Surfer {
 
     typedef std::function<void(KeyCode key)> KeyPressCallback;
     typedef std::function<void(KeyCode key)> KeyReleaseCallback;
+    typedef std::function<void(uint32_t c)> CharacterInputCallback;
     typedef std::function<void(uint32_t x, uint32_t y)> MouseMotionCallback;
     typedef std::function<void(uint32_t width, uint32_t height)> ResizeCallback;
     typedef std::function<void(int32_t x, int32_t y)> MoveCallback;
@@ -211,6 +212,13 @@ namespace Surfer {
         void registerKeyReleaseCallback(const KeyReleaseCallback &callback) { this->_keyReleaseCallback = callback; }
 
         /**
+         * Registers a callback that is triggered when character input is provided from an OS
+         * @param callback  CharacterInputCallback function (receives unicode codepoint value)
+         * @note This is different from KeyPressCallback which handles key inputs (shortcuts, enter etc.)
+         */
+        void registerCharacterInputCallback(const CharacterInputCallback &callback) {this->_characterInputCallback = callback; }
+
+        /**
          * Registers a callback that is triggered when a mouse is moved (cursor position has changed)
          * @param callback MouseMotionCallback function
          */
@@ -306,6 +314,7 @@ namespace Surfer {
 
         // Callbacks
         KeyPressCallback _keyPressCallback = nullptr;
+        CharacterInputCallback _characterInputCallback = nullptr;
         KeyReleaseCallback _keyReleaseCallback = nullptr;
         MouseMotionCallback _mouseMotionCallback = nullptr;
         ResizeCallback _resizeCallback = nullptr;
@@ -542,6 +551,14 @@ namespace Surfer {
                         window->Win32_onFocusOut();
                     }
                 }
+                case WM_CHAR: {
+                    if (window) {
+                        window->Win32_onCharInput(wParam);
+                    }
+                    return 0;
+                }
+                case WM_SYSCHAR:
+                    return 0;
                 default:
                     return DefWindowProc(hWnd, uMsg, wParam, lParam);
             }
@@ -559,6 +576,41 @@ namespace Surfer {
             _mouseEntered = false;
             if (_mouseEnterExitCallback != nullptr) {
                 _mouseEnterExitCallback(false);
+            }
+        }
+
+        void Win32_onCharInput(WPARAM wParam) {
+            static wchar_t high_surrogate = 0;
+
+            if (!_characterInputCallback)
+                return;
+
+            wchar_t wc = static_cast<wchar_t>(wParam);
+
+            // High surrogate
+            if (wc >= 0xD800 && wc <= 0xDBFF) {
+                high_surrogate = wc;
+                return;
+            }
+
+            uint32_t codepoint = 0;
+
+            // Low surrogate
+            if (wc >= 0xDC00 && wc <= 0xDFFF && high_surrogate) {
+                codepoint =
+                    0x10000 +
+                    ((high_surrogate - 0xD800) << 10) +
+                    (wc - 0xDC00);
+                high_surrogate = 0;
+            }
+            else {
+                codepoint = static_cast<uint32_t>(wc);
+                high_surrogate = 0;
+            }
+
+            // Filter control characters
+            if (codepoint >= 0x20 || codepoint == '\n' || codepoint == '\t') {
+                _characterInputCallback(codepoint);
             }
         }
 

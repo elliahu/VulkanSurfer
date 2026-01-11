@@ -23,3 +23,5 @@ elseif(UNIX AND NOT APPLE)
     find_package(X11 REQUIRED)
     target_link_libraries(VulkanSurfer INTERFACE ${X11_LIBRARIES})
 endif()
+
+add_subdirectory(example)

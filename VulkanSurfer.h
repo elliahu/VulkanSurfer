@@ -95,7 +95,7 @@ namespace Surfer {
 
     typedef std::function<void(KeyCode key)> KeyPressCallback;
     typedef std::function<void(KeyCode key)> KeyReleaseCallback;
-    typedef std::function<void(uint32_t c)> CharacterInputCallback;
+    typedef std::function<void(const char*)> CharacterInputCallback;
     typedef std::function<void(uint32_t x, uint32_t y)> MouseMotionCallback;
     typedef std::function<void(uint32_t width, uint32_t height)> ResizeCallback;
     typedef std::function<void(int32_t x, int32_t y)> MoveCallback;
@@ -213,7 +213,7 @@ namespace Surfer {
 
         /**
          * Registers a callback that is triggered when character input is provided from an OS
-         * @param callback  CharacterInputCallback function (receives unicode codepoint value)
+         * @param callback  CharacterInputCallback function (receives utf8 value)
          * @note This is different from KeyPressCallback which handles key inputs (shortcuts, enter etc.)
          */
         void registerCharacterInputCallback(const CharacterInputCallback &callback) {this->_characterInputCallback = callback; }
@@ -587,20 +587,15 @@ namespace Surfer {
 
             wchar_t wc = static_cast<wchar_t>(wParam);
 
-            // High surrogate
+            uint32_t codepoint = 0;
+
+            // Handle surrogate pairs
             if (wc >= 0xD800 && wc <= 0xDBFF) {
                 high_surrogate = wc;
                 return;
             }
-
-            uint32_t codepoint = 0;
-
-            // Low surrogate
-            if (wc >= 0xDC00 && wc <= 0xDFFF && high_surrogate) {
-                codepoint =
-                    0x10000 +
-                    ((high_surrogate - 0xD800) << 10) +
-                    (wc - 0xDC00);
+            else if (wc >= 0xDC00 && wc <= 0xDFFF && high_surrogate) {
+                codepoint = 0x10000 + ((high_surrogate - 0xD800) << 10) + (wc - 0xDC00);
                 high_surrogate = 0;
             }
             else {
@@ -609,9 +604,32 @@ namespace Surfer {
             }
 
             // Filter control characters
-            if (codepoint >= 0x20 || codepoint == '\n' || codepoint == '\t') {
-                _characterInputCallback(codepoint);
+            if (!(codepoint >= 0x20 || codepoint == '\n' || codepoint == '\t'))
+                return;
+
+            // Convert codepoint to UTF-8
+            char utf8[5] = {0}; // max 4 bytes + null terminator
+            if (codepoint <= 0x7F) {
+                utf8[0] = static_cast<char>(codepoint);
             }
+            else if (codepoint <= 0x7FF) {
+                utf8[0] = static_cast<char>(0xC0 | (codepoint >> 6));
+                utf8[1] = static_cast<char>(0x80 | (codepoint & 0x3F));
+            }
+            else if (codepoint <= 0xFFFF) {
+                utf8[0] = static_cast<char>(0xE0 | (codepoint >> 12));
+                utf8[1] = static_cast<char>(0x80 | ((codepoint >> 6) & 0x3F));
+                utf8[2] = static_cast<char>(0x80 | (codepoint & 0x3F));
+            }
+            else { // <= 0x10FFFF
+                utf8[0] = static_cast<char>(0xF0 | (codepoint >> 18));
+                utf8[1] = static_cast<char>(0x80 | ((codepoint >> 12) & 0x3F));
+                utf8[2] = static_cast<char>(0x80 | ((codepoint >> 6) & 0x3F));
+                utf8[3] = static_cast<char>(0x80 | (codepoint & 0x3F));
+            }
+
+            // Call callback with UTF-8 string
+            _characterInputCallback(utf8);
         }
 
         void Win32_onKeyDown(WPARAM key) {
@@ -876,6 +894,7 @@ namespace Surfer {
         ::Window X11_window;
         ::Window X11_root;
         Atom X11_wmDeleteMessage;
+        XIC X11_xic = nullptr;
 
         void X11_createWindow(const std::string &title, const uint32_t width,
                               const uint32_t height, const int32_t x, const int32_t y) {
@@ -913,6 +932,17 @@ namespace Surfer {
             Atom XdndAware = XInternAtom(X11_display, "XdndAware", False);
             XChangeProperty(X11_display, X11_window, XdndAware, XA_ATOM, 32, PropModeReplace,
                             (unsigned char *) &XdndAware, 1);
+
+            // Create XIM
+            XIM xim = XOpenIM(X11_display, nullptr, nullptr, nullptr);
+            if (xim) {
+                X11_xic = XCreateIC(
+                    xim,
+                    XNInputStyle, XIMPreeditNothing | XIMStatusNothing,
+                    XNClientWindow, X11_window,
+                    nullptr
+                );
+            }
         }
 
         void X11_destroyWindow() {
@@ -951,7 +981,7 @@ namespace Surfer {
                     break;
                 }
                 case KeyPress: {
-                    X11_onKeyPress(event.xkey.keycode);
+                    X11_onKeyPress(&event.xkey);
                     break;
                 }
                 case KeyRelease: {
@@ -1018,8 +1048,8 @@ namespace Surfer {
             }
         }
 
-        void X11_onKeyPress(unsigned int x11KeyCode) {
-            KeySym keySym = XkbKeycodeToKeysym(X11_display, x11KeyCode, 0, 0);
+        void X11_onKeyPress(XKeyEvent* event) {
+            KeySym keySym = XkbKeycodeToKeysym(X11_display, event->keycode, 0, 0);
             const KeyCode transledKeyCode = X11_translateKeyCode(keySym);
 
             if (_keyPressCallback != nullptr) {
@@ -1028,6 +1058,19 @@ namespace Surfer {
 
             if (_nativeKeyPressCallback != nullptr) {
                 _nativeKeyPressCallback(keySym);
+            }
+
+            if (_characterInputCallback != nullptr && X11_xic != nullptr) {
+                char buf[32] = {};
+                Status status;
+
+                // Converts key press to UTF-8 string according to layout and IME
+                int n = Xutf8LookupString(X11_xic, event, buf, sizeof(buf) - 1, nullptr, &status);
+                buf[n] = '\0';
+
+                if (status == XLookupChars || status == XLookupBoth) {
+                    _characterInputCallback(buf); // forward UTF-8 string
+                }
             }
         }
 

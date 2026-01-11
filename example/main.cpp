@@ -89,10 +89,8 @@ int main() {
     });
 
     // Char input
-    window->registerCharacterInputCallback([](std::uint32_t input) {
-        // NOTE: input is unicode codepoint so this is not technically correct and should be converted to utf-8 first
-        // because of this, special character that are not asci will print gibberish
-        std::cout << "Character input: " <<  static_cast<char>(input) << std::endl;
+    window->registerCharacterInputCallback([](const char * input) {
+        std::cout << "Character input: " <<  input << std::endl;
     });
 
     // For your ui

@@ -11,9 +11,19 @@ struct ImGui_ImplVulkanSurfer_Data {
     std::chrono::time_point<std::chrono::high_resolution_clock> Time;
 
     // Event queues
-    struct KeyEvent { ImGuiKey key; bool down; };
-    struct MouseButtonEvent { int button; bool down; };
-    struct MousePosEvent { float x, y; };
+    struct KeyEvent {
+        ImGuiKey key;
+        bool down;
+    };
+
+    struct MouseButtonEvent {
+        int button;
+        bool down;
+    };
+
+    struct MousePosEvent {
+        float x, y;
+    };
 
     std::vector<KeyEvent> KeyEvents;
     std::vector<MouseButtonEvent> MouseButtonEvents;
@@ -189,7 +199,8 @@ inline bool ImGui_ImplVulkanSurfer_Init(Surfer::Window *window) {
     g_VulkanSurferData->DisplaySize = ImVec2(static_cast<float>(width), static_cast<float>(height));
 
     io.BackendPlatformName = "imgui_impl_vulkansurfer_header_only";
-    io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors | ImGuiBackendFlags_HasKeyboard | ImGuiConfigFlags_NavEnableKeyboard;
+    io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors | ImGuiBackendFlags_HasKeyboard |
+            ImGuiConfigFlags_NavEnableKeyboard;
 
     // Keyboard Callbacks - Queue events instead of directly calling ImGui
     window->registerKeyPressCallback([](Surfer::KeyCode key) {
@@ -225,15 +236,19 @@ inline bool ImGui_ImplVulkanSurfer_Init(Surfer::Window *window) {
     // Mouse Input (Motion & Buttons) - Queue events
     window->registerMouseMotionCallback([](int x, int y) {
         if (g_VulkanSurferData) {
-            g_VulkanSurferData->MousePosEvents.push_back({(float)x, (float)y});
+            g_VulkanSurferData->MousePosEvents.push_back({(float) x, (float) y});
         }
     });
 
     // Resize Handling
     window->registerResizeCallback([](int width, int height) {
         if (g_VulkanSurferData) {
-            g_VulkanSurferData->DisplaySize = ImVec2((float)width, (float)height);
+            g_VulkanSurferData->DisplaySize = ImVec2((float) width, (float) height);
         }
+    });
+
+    window->registerCharInputCallback([](uint32_t cp) {
+        ImGui::GetIO().AddInputCharacter(cp);
     });
 
     return true;
@@ -260,19 +275,19 @@ inline void ImGui_ImplVulkanSurfer_NewFrame() {
     g_VulkanSurferData->Time = current_time;
 
     // Process queued keyboard events
-    for (const auto& event : g_VulkanSurferData->KeyEvents) {
+    for (const auto &event: g_VulkanSurferData->KeyEvents) {
         io.AddKeyEvent(event.key, event.down);
     }
     g_VulkanSurferData->KeyEvents.clear();
 
     // Process queued mouse button events
-    for (const auto& event : g_VulkanSurferData->MouseButtonEvents) {
+    for (const auto &event: g_VulkanSurferData->MouseButtonEvents) {
         io.AddMouseButtonEvent(event.button, event.down);
     }
     g_VulkanSurferData->MouseButtonEvents.clear();
 
     // Process queued mouse position events
-    for (const auto& event : g_VulkanSurferData->MousePosEvents) {
+    for (const auto &event: g_VulkanSurferData->MousePosEvents) {
         io.AddMousePosEvent(event.x, event.y);
     }
     g_VulkanSurferData->MousePosEvents.clear();

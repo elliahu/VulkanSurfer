@@ -200,7 +200,7 @@ inline bool ImGui_ImplVulkanSurfer_Init(Surfer::Window *window) {
 
     io.BackendPlatformName = "imgui_impl_vulkansurfer_header_only";
     io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;
-    io.BackendFalgs |= ImGuiConfigFlags_NavEnableKeyboard;
+    io.BackendFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
     // Keyboard Callbacks - Queue events instead of directly calling ImGui
     window->registerKeyPressCallback([](Surfer::KeyCode key) {

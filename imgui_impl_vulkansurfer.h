@@ -32,7 +32,7 @@ struct ImGui_ImplVulkanSurfer_Data {
 };
 
 // Use a static pointer to keep the state local to the translation unit
-static ImGui_ImplVulkanSurfer_Data *g_VulkanSurferData = nullptr;
+inline ImGui_ImplVulkanSurfer_Data *g_VulkanSurferData = nullptr;
 
 // Helper: Key Mapping
 inline ImGuiKey ImGui_ImplVulkanSurfer_KeyToImGuiKey(Surfer::KeyCode key) {

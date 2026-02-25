@@ -72,7 +72,7 @@ Event callbacks:
 
 - `KeyPressCallback` - (keyboard or mouse) key was pressed
 - `KeyReleaseCallback` - (keyboard or mouse) key was released
-- `CharacterInputCallback` - OS character input (unicode codepoint value)
+- `CharacterInputCallback` - OS character input (utf8)
 - `MouseMotionCallback` - mouse moved in window (cursor position changed)
 - `ResizeCallback` - window was resized
 - `MoveCallback` - window was moved on screen

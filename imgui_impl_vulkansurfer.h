@@ -247,8 +247,8 @@ inline bool ImGui_ImplVulkanSurfer_Init(Surfer::Window *window) {
         }
     });
 
-    window->registerCharacterInputCallback([](uint32_t cp) {
-        ImGui::GetIO().AddInputCharacter(cp);
+    window->registerCharacterInputCallback([](const char * c) {
+        ImGui::GetIO().AddInputCharactersUTF8(c);
     });
 
     return true;

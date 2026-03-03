@@ -48,6 +48,7 @@
 #include <X11/XKBlib.h>
 #include <X11/Xutil.h>
 #include <vulkan/vulkan_xlib.h>
+#undef None
 #endif
 
 namespace Surfer {
